@@ -2,6 +2,8 @@ import 'api.dart';
 import 'models.dart';
 import 'project_names.dart';
 import 'errors.dart';
+import 'github_projects.dart';
+import 'static_deploy.dart';
 
 class VercelRepository {
   VercelRepository(this.api, {this.team});
@@ -27,6 +29,48 @@ class VercelRepository {
   }
   Future<void> createProject(String name, String? framework) async {
     await api.write('POST', '/v11/projects', team: team, body: {'name': name, if (framework != null) 'framework': framework});
+  }
+  Future<void> createGitHubProject(String name, String githubInput, {String? framework}) async {
+    if (!validProjectName(name)) {
+      throw const ApiFailure(FailureKind.invalid, 'Nome de projeto inválido.');
+    }
+    final repo = githubRepositoryPath(githubInput);
+    await api.write('POST', '/v11/projects', team: team, body: {
+      'name': name,
+      'gitRepository': {'type': 'github', 'repo': repo},
+      if (framework != null && framework.isNotEmpty) 'framework': framework,
+    });
+  }
+  /// Uploads a static site and creates a Preview only, never a production deploy.
+  /// Returns the newly created deployment ID, not a claim of a READY build.
+  Future<String> deployStaticPreview(Project project, List<SiteFile> files,
+      {void Function(int completed, int total)? onProgress}) async {
+    if (project.repository != null || (project.framework != null && project.framework != 'other')) {
+      throw const ApiFailure(FailureKind.invalid, 'Use um projeto estático sem Git ou framework vinculado.');
+    }
+    if (files.isEmpty || files.length > StaticZip.maxFiles ||
+        !files.any((file) => file.path == 'index.html')) {
+      throw const ApiFailure(FailureKind.invalid, 'Selecione um ZIP de site estático válido.');
+    }
+    final uploaded = <String>{};
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      if (uploaded.add(file.sha)) {
+        await api.write('POST', '/v2/files', team: team, body: file.bytes,
+          headers: {'x-vercel-digest': file.sha});
+      }
+      onProgress?.call(i + 1, files.length);
+    }
+    final result = object(await api.write('POST', '/v13/deployments', team: team, body: {
+      'name': project.name,
+      'project': project.id,
+      'files': [for (final file in files) {
+        'file': file.path, 'sha': file.sha, 'size': file.bytes.length,
+      }],
+      'projectSettings': {'framework': null},
+      // Intentionally omit target: per Vercel API, this creates a Preview.
+    }));
+    return requiredString(result, 'id');
   }
   Future<void> updateProject(String id, Json settings) async {
     await api.write('PATCH', projectPath(id), team: team, body: settings);

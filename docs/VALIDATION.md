@@ -1,3 +1,22 @@
+# Validação da v1.3.0+5 (14/10/2026)
+
+## Passou neste ambiente
+- `python3 scripts/check_version.py`: versões 1.3.0+5 sincronizadas, `app.meuvercel.android` preservado.
+- `python3 scripts/check_structure.py`: delimitadores de 30 arquivos Dart equilibrados, JSON/XML e workflow analisados estruturalmente. **Não equivale à análise de tipos ou compilação Dart**.
+- `python3 scripts/test_tooling.py`: 5 testes Python aprovados (checksum, assinatura persistente/de teste e parâmetros de signing).
+- Geração do ZIP com `scripts/create_source_zip.py`, verificação CRC e SHA-256 efetuadas ao empacotar.
+
+## Não executado / pendente
+- `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --release`: Flutter e Android SDK indisponíveis no ambiente local; dependências novas (`archive: 4.0.9`) precisam ser resolvidas em CI.
+- `test/github_deploy_test.dart`: testes de importação GitHub, validação ZIP e fluxo SHA-1 + Preview adicionados, mas **ainda não executados**.
+- Testes em Android físico, autorização real Vercel-GitHub e deploy remoto em conta de teste **pendentes**. Não houve envio de arquivos nem mutações em contas de produção nesta entrega.
+
+## Riscos observáveis
+- A conexão de projeto Git depende de instalação GitHub autorizada na Vercel e permissões no repositório.
+- O ZIP de site estático requer artefatos já compilados e vai somente para Preview.
+- O indicador da interface mostra arquivos enviados à API, não bytes nem status READY.
+- Os limites de tamanho são conservadores; confira sempre na tela os nomes antes de publicar.
+
 ## Validação desta entrega — 1.2.0+4 (14/10/2026)
 
 **Executado localmente (código atual):**

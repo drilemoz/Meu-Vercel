@@ -53,3 +53,25 @@ timeout. Se a resposta se perder, atualize e confirme o estado antes de tentar o
 401 pede novo token; 403 informa autorização; 404 informa recurso indisponível;
 400/422 informam campos/permissões; 5xx informa indisponibilidade. Corpos de erro,
 URLs com parâmetros, headers privados e exceções Dio não aparecem em diagnósticos.
+
+
+## v1.3.0: importação GitHub pela Vercel
+
+`POST /v11/projects` no escopo pessoal ou com `teamId`, com corpo:
+
+```json
+{"name":"meu-site","gitRepository":{"type":"github","repo":"proprietario/repositorio"}}
+```
+
+O aplicativo **não** pesquisa repositórios privados nem utiliza token GitHub próprio. O repositório deve estar previamente autorizado pela integração GitHub na conta Vercel. A conclusão da requisição não garante que um deploy subsequente tenha ficado READY.
+
+## v1.3.0: publicação ZIP estático no Preview
+
+1. Android seleciona ZIP pelo File Picker e valida cada caminho/entrada.
+2. `POST /v2/files` com bytes binários, `Content-Type: application/octet-stream` e `x-vercel-digest: SHA-1`, no mesmo escopo (`teamId`) da implantação.
+3. `POST /v13/deployments` com `name`, `project` (ID), `files: [{file, sha, size}]` e `projectSettings.framework: null`.
+4. `target` é deliberadamente **omitido**: Vercel define Preview. O retorno de um ID não é uma confirmação de READY. O usuário acompanha o resultado em Deploys.
+
+Somente ZIP estático com `index.html` na raiz ou diretório envoltório único; máx. 12 MiB compactado / 20 MiB de conteúdo / 120 arquivos. Esse fluxo **não** compila projetos Next.js/Flutter e não é autorizado em projeto identificado com Git ou framework.
+
+Documentação pública consultada: `https://vercel.com/docs/rest-api/deployments/upload-deployment-files` e `https://vercel.com/docs/rest-api/deployments/create-a-new-deployment`.

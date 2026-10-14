@@ -1,3 +1,11 @@
+## Versão 1.3.0+5 (14/10/2026)
+- Novo botão **Importar GitHub**: projeto Vercel com `gitRepository` (GitHub), aceitando `dono/repositório` ou URL HTTPS após validação estrita. Requer que a integração GitHub já esteja autorizada na conta Vercel. Não lê repositórios privados por fora da Vercel nem armazena token GitHub.
+- Publicação pelo celular de **ZIP estático** em projeto sem Git/framework, via `/v2/files` com SHA-1 e `/v13/deployments` com referências de arquivos. Apenas Preview; Production não é solicitado. Requer `index.html` na raiz (ou numa única pasta envoltória).
+- Limites defensivos: ZIP até 12 MiB, arquivos descompactados até 20 MiB, no máximo 120 arquivos, validação de caminhos, duplicações e extensões sensíveis; não grava extrações no armazenamento.
+- Confirmação anterior ao envio, indicação de progresso por arquivo e redirecionamento para o histórico de deploys. O sucesso da requisição não confirma deploy READY.
+- `archive: 4.0.9` adicionada; Android applicationId, backup, sessão, assinatura e workflow de APK direto preservados.
+- Testes unitários com dublês adicionados; testes Flutter/Gradle dependem do ambiente GitHub Actions e de conta de teste para verificação real da API.
+
 ## Versão 1.2.0+4 (14/10/2026)
 - Login: substituído **Copiar** por **Colar**, usando o texto da área de transferência sem registrar o token; continua oculto por padrão, com botão de visualização.
 - Botões **Validar e entrar** e **Painel Vercel** agora estão lado a lado e levam, respectivamente, à validação do token e ao painel HTTPS oficial.
@@ -12,9 +20,9 @@
 
 # Versionamento
 
-Estado atual: **1.2.0+4**, Android versionName **1.2.0**, versionCode **4**.
+Estado atual: **1.3.0+5**, Android versionName **1.3.0**, versionCode **5**.
 Primeira entrega: 1.0.1+1. A 1.0.2 corrige a instalação SDK no workflow.
-Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.2.0.apk`.
+Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.3.0.apk`.
 
 Cada versão entregue/publicada depois desta aumenta o versionCode para o próximo
 inteiro não usado. Exemplo seguinte: correção 1.0.3+3, função compatível 1.1.0+4. SemVer:

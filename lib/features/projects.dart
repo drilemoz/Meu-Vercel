@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../core/controller.dart';
 import '../core/models.dart';
 import '../core/project_names.dart';
+import '../core/static_deploy.dart';
+import '../core/errors.dart';
 import 'common.dart';
 import 'dashboard.dart';
 import 'deployments.dart';
@@ -29,6 +34,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> with OperationState<Pro
     await run(() async { await app.repository.createProject(name, input['framework']!.trim().isEmpty ? null : input['framework']!.trim());
       await app.sync(force: true); }, success: 'Projeto criado.');
   }
+  Future<void> _importGitHub() async {
+    final input = await fieldsDialog(context, 'Importar repositório GitHub', {
+      'name': 'Nome do projeto na Vercel',
+      'repo': 'GitHub: proprietário/repositório ou URL HTTPS',
+    });
+    if (!mounted || input == null) return;
+    final name = input['name']!.trim();
+    final repository = input['repo']!.trim();
+    if (!validProjectName(name)) {
+      feedback(context, 'Nome do projeto inválido. Use apenas minúsculas, números e - _ .');
+      return;
+    }
+    if (!await confirmAction(context, title: 'Importar do GitHub?', resource: name,
+      description: 'Conectar $repository à conta ${app.activeName}. A Vercel precisa ter acesso ao repositório por uma integração GitHub já autorizada. Isso pode iniciar deploys automáticos.')) return;
+    await run(() async {
+      await app.repository.createGitHubProject(name, repository);
+      await app.sync(force: true);
+    }, success: 'Projeto GitHub conectado. Confira o deploy na Vercel.');
+  }
   @override Widget build(BuildContext context) {
     final frameworks = app.projects.map((p) => p.framework ?? 'none').toSet().toList()..sort();
     final selectedFramework = frameworks.contains(framework) ? framework : 'all';
@@ -46,7 +70,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> with OperationState<Pro
           DropdownButton<String>(value: selectedFramework, items: [const DropdownMenuItem(value: 'all', child: Text('Todos os frameworks')),
             for (final f in frameworks) DropdownMenuItem(value: f, child: Text(f == 'none' ? 'Não informado' : f))], onChanged: (v) => setState(() => framework = v!)),
           FilledButton.tonalIcon(onPressed: working || app.busy ? null : _create,
-            icon: const Icon(Icons.add), label: const Text('Criar projeto'))])),
+            icon: const Icon(Icons.add), label: const Text('Criar projeto')),
+          OutlinedButton.icon(onPressed: working || app.busy ? null : _importGitHub,
+            icon: const Icon(Icons.code), label: const Text('Importar GitHub'))])),
       if (working) const LinearProgressIndicator(),
       Expanded(child: RefreshIndicator(onRefresh: () => app.sync(force: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(),
         children: [if (projects.isEmpty) const EmptyView('Nenhum projeto encontrado.'), for (final p in projects) ProjectTile(app, p),
@@ -64,6 +90,8 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
   @override AppController get app => widget.app;
   late Project project;
   bool current = false;
+  int uploaded = 0;
+  int uploadTotal = 0;
   @override void initState() { super.initState(); project = widget.initial; WidgetsBinding.instance.addPostFrameCallback((_) => _reload()); }
   Future<void> _reload() => run(() async {
     setState(() => current = false);
@@ -103,6 +131,40 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
     await run(() async { await app.repository.updateProject(project.id, {for (final e in input.entries) e.key: e.value.trim().isEmpty ? null : e.value.trim()});
       project = await app.repository.project(project.id); current = true; await app.sync(force: true); }, success: 'Configurações salvas.');
   }
+  Future<void> _publishZip() async {
+    if (project.repository != null || (project.framework != null && project.framework != 'other')) {
+      feedback(context, 'Publicação ZIP disponível apenas para projeto estático sem Git e sem framework.');
+      return;
+    }
+    await run(() async {
+      final chosen = await FilePicker.platform.pickFiles(
+        type: FileType.custom, allowedExtensions: ['zip'], withData: false);
+      if (chosen == null || chosen.files.isEmpty) return;
+      final path = chosen.files.single.path;
+      if (path == null) throw const ApiFailure(FailureKind.invalid, 'Não foi possível acessar o ZIP selecionado.');
+      final selected = File(path);
+      final length = await selected.length();
+      if (length <= 0 || length > StaticZip.maxZipBytes) {
+        throw const ApiFailure(FailureKind.invalid, 'O ZIP deve ter no máximo 12 MiB.');
+      }
+      final files = await compute(StaticZip.prepare, await selected.readAsBytes());
+      final totalBytes = files.fold<int>(0, (sum, item) => sum + item.bytes.length);
+      final preview = files.take(8).map((item) => item.path).join('\n');
+      final more = files.length > 8 ? '\n... e mais ${files.length - 8} arquivos' : ''; 
+      if (!mounted) return;
+      if (!await confirmAction(context, title: 'Publicar ZIP em Preview?', resource: project.name,
+        description: '${files.length} arquivos, ${(totalBytes / 1024).toStringAsFixed(1)} KiB, no projeto ${project.name} (${app.activeName}). '
+          'Esta operação enviará seus arquivos à Vercel e poderá gerar consumo de recursos. '
+          'O deploy será exclusivamente Preview, não Production.\n\nArquivos:\n$preview$more')) return;
+      if (mounted) setState(() { uploaded = 0; uploadTotal = files.length; });
+      final id = await app.repository.deployStaticPreview(project, files, onProgress: (completed, total) {
+        if (mounted) setState(() { uploaded = completed; uploadTotal = total; });
+      });
+      await app.sync(force: true);
+      if (mounted) feedback(context, 'Preview solicitado ($id). Confira o status em Deploys.');
+    });
+    if (mounted) setState(() { uploaded = 0; uploadTotal = 0; });
+  }
   Future<void> _delete() async {
     if (!await confirmAction(context, title: 'Excluir projeto?', resource: project.name, destructive: true, production: true,
       description: 'O projeto e seus recursos na Vercel serão removidos. Esta operação não pode ser desfeita.')) return;
@@ -111,11 +173,17 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
   }
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(project.name), actions: [
     IconButton(tooltip: 'Atualizar', onPressed: working ? null : _reload, icon: const Icon(Icons.refresh))]),
-    body: ListView(children: [if (working) const LinearProgressIndicator(), if (!current) const ListTile(dense: true,
+    body: ListView(children: [if (working) LinearProgressIndicator(
+      value: uploadTotal > 0 ? uploaded / uploadTotal : null),
+      if (uploadTotal > 0) ListTile(title: Text('Enviando $uploaded de $uploadTotal arquivos')),
+      if (!current) const ListTile(dense: true,
       leading: Icon(Icons.history), title: Text('Dados previamente sincronizados; consulta online pendente.')),
       InfoLine('Framework', project.framework), InfoLine('Repositório Git', project.repository),
       ListTile(leading: const Icon(Icons.drive_file_rename_outline), title: const Text('Renomear projeto'),
         subtitle: const Text('Alterar o nome na Vercel'), onTap: working || app.busy ? null : _rename),
+      ListTile(leading: const Icon(Icons.upload_file_outlined), title: const Text('Publicar ZIP estático'),
+        subtitle: const Text('Escolher ZIP com index.html e enviar para Preview (não Production)'),
+        onTap: working || app.busy ? null : _publishZip),
       ListTile(leading: const Icon(Icons.rocket_launch_outlined), title: const Text('Histórico de deploys'), trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ProjectDeploymentsScreen(app, project)))),
       ListTile(leading: const Icon(Icons.language), title: const Text('Domínios'), trailing: const Icon(Icons.chevron_right),

@@ -1,3 +1,9 @@
+## Novidades 1.3.0+5
+
+A seção **Projetos** possui **Importar GitHub**. Informe `dono/repo` de um repositório que a Vercel já tenha permissão para acessar. A API da Vercel cria o projeto e configura a integração Git. Verifique o primeiro deploy na Vercel.
+
+Nos detalhes de um projeto **estático sem Git e sem framework**, toque em **Publicar ZIP estático**. Selecione um ZIP com `index.html`, confira o resumo e confirme. A criação inicial ocorre em **Preview**; depois acompanhe o estado em Deploys. Projetos com Next.js, Flutter, integrações Git, ZIPs enormes, arquivos sensíveis, monorepos e publicação Production estão fora do escopo desta funcionalidade inicial. O ZIP deve conter arquivos do site prontos para servir, não o código que precisa de build.
+
 ## Versão 1.2.0+4 (14/10/2026)
 - Login: substituído **Copiar** por **Colar**, usando o texto da área de transferência sem registrar o token; continua oculto por padrão, com botão de visualização.
 - Botões **Validar e entrar** e **Painel Vercel** agora estão lado a lado e levam, respectivamente, à validação do token e ao painel HTTPS oficial.
@@ -13,7 +19,7 @@
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão atual **1.2.0**, versionCode **4**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.3.0**, versionCode **5**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -53,7 +59,8 @@ A correção precisa ser executada novamente no GitHub Actions para confirmar o 
 - Alertas locais opcionais para transições de status observadas ao sincronizar.
 - Backup JSON v1 pelo seletor de arquivos Android, checksum SHA-256, validação de
   campos e confirmação antes da restauração; preferências e favoritos, sem tokens.
-- Interface de extensão para GitHub, ainda sem autenticação ou ações GitHub.
+- Importação GitHub: cria projeto Vercel usando repositório já autorizado na integração GitHub da Vercel; não inclui gerenciador de repositórios GitHub.
+- Publicação de ZIP estático pelo Android em Preview para projetos sem integração Git/framework. Limits: 12 MiB ZIP, 20 MiB conteúdo, 120 arquivos, `index.html` obrigatório; não publica em Production.
 
 ## Executar e configurar
 

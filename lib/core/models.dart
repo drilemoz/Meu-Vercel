@@ -57,7 +57,8 @@ class Project {
   static const settingKeys = ['buildCommand', 'installCommand', 'outputDirectory', 'rootDirectory'];
   factory Project.fromJson(Json j) {
     final link = j['link'] is Map ? object(j['link']) : <String, dynamic>{};
-    final repo = optionalString(link['repo']) ?? optionalString(link['repoId']);
+    final repo = optionalString(link['repo']) ?? optionalString(link['repoId']) ??
+      (link['repoId'] is num ? link['repoId'].toString() : null);
     final owner = optionalString(link['org']) ?? optionalString(link['repoOwner']);
     return Project(id: requiredString(j, 'id'), name: requiredString(j, 'name'),
       framework: optionalString(j['framework']), updatedAt: date(j['updatedAt']),

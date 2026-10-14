@@ -25,7 +25,7 @@ class VercelApi {
   }
   void close() { cancel(); _dio.close(force: true); }
   static String segment(String value) => Uri.encodeComponent(value);
-  Future<Object?> _request(String method, String path, {String? team, Json? query, Object? body}) async {
+  Future<Object?> _request(String method, String path, {String? team, Json? query, Object? body, Map<String, String>? extraHeaders}) async {
     if (!path.startsWith('/') || path.startsWith('//') || path.contains('://')) {
       throw const ApiFailure(FailureKind.invalid, 'Endereço de API não permitido.');
     }
@@ -35,7 +35,8 @@ class VercelApi {
     try {
       final response = await _dio.request<Object?>(path,
         queryParameters: {...?query, if (team != null) 'teamId': team}, data: body,
-        options: Options(method: method, headers: {'Authorization': 'Bearer $_token'}), cancelToken: _cancel);
+        options: Options(method: method, headers: {'Authorization': 'Bearer $_token', ...?extraHeaders},
+          contentType: body is List<int> ? 'application/octet-stream' : 'application/json'), cancelToken: _cancel);
       return response.data;
     } on DioException catch (e) {
       // Never return server bodies, request headers or the original exception.
@@ -73,5 +74,6 @@ class VercelApi {
     try { return await future; } finally { if (identical(_reads[key], future)) _reads.remove(key); }
   }
   Future<Json> get(String path, {String? team, Json? query}) async => object(await read(path, team: team, query: query));
-  Future<Object?> write(String method, String path, {String? team, Object? body}) => _request(method, path, team: team, body: body);
+  Future<Object?> write(String method, String path, {String? team, Object? body, Map<String, String>? headers}) =>
+    _request(method, path, team: team, body: body, extraHeaders: headers);
 }
