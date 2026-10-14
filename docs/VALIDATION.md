@@ -1,3 +1,31 @@
+# Correção do workflow #7 — 1.5.1+8 (14/10/2026)
+
+## Evidência do log recebido
+- O workflow instalou dependências com sucesso e chegou a `flutter analyze`.
+- `flutter analyze` reportou **dois** problemas `info • unnecessary_import`, nas linhas 1 e 2 de `lib/core/android_site_folder.dart` e `test/android_site_folder_test.dart`, respectivamente.
+- A etapa terminou com `2 issues found` e **exit code 1**, interrompendo o job.
+- `flutter test`, `flutter build apk --release`, assinatura, APK e publicação da Release **não ocorreram nessa execução**.
+
+## Ajuste implementado
+- Remoção dos dois imports de `dart:typed_data`; ambos os arquivos continuam importando `package:flutter/services.dart`, que já fornece `Uint8List`.
+- Funcionalidades de SAF, deploy, login e gerenciamento de projetos preservadas.
+- Versionamento 1.5.1+8; versionCode sequencial, metadados Android/Flutter, release e novidades sincronizados.
+
+## Verificações da correção
+
+- `python3 scripts/check_version.py`: **aprovado** (1.5.1+8, `app.meuvercel.android`, nome de APK sincronizado).
+- `python3 scripts/check_structure.py`: **aprovado** (35 arquivos Dart com delimitadores balanceados, JSON/XML/workflow legíveis; não substitui `flutter analyze`).
+- `python3 scripts/test_tooling.py`: **5/5 testes Python aprovados** (assinatura/empacotamento).
+- `bash -n android/gradlew`: **aprovado**.
+- Verificação dirigida: duas importações redundantes removidas; `Uint8List` permanece referenciado e disponível pelo import de `flutter/services.dart`.
+- Flutter/Dart SDK **não disponíveis neste ambiente**: não foi possível executar análise, testes Flutter ou build local.
+
+## Pendente
+- Reexecutar `flutter analyze`, `flutter test --coverage` e `flutter build apk --release` no GitHub Actions.
+- Confirmar assinatura e publicação de `Meu Vercel-v1.5.1.apk` no GitHub Releases; testes de funcionamento no Android.
+
+---
+
 # Validação da versão 1.5.0+7 (14/10/2026)
 
 ## Implementação

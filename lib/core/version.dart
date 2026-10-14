@@ -1,7 +1,8 @@
-const appVersion = '1.5.0';
-const appVersionCode = 7;
+const appVersion = '1.5.1';
+const appVersionCode = 8;
 const applicationId = 'app.meuvercel.android';
 const releaseHighlights = <String>[
+  'Correção de compilação: imports Dart redundantes removidos após logs do workflow #7.',
   'Login: colar token, conferir visualização e validar ao lado do painel Vercel.',
   'Conta pessoal e equipes com token armazenado com segurança.',
   'Projetos: importar GitHub autorizado na Vercel e gerenciar projetos.',

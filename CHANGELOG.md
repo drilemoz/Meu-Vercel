@@ -1,3 +1,9 @@
+## Versão 1.5.1+8 (14/10/2026)
+- Corrigido o `flutter analyze` do workflow #7 (`unnecessary_import`): retirada a importação redundante de `dart:typed_data` no seletor SAF e no respectivo teste. O tipo `Uint8List` permanece disponível via `package:flutter/services.dart`.
+- Nenhuma alteração no fluxo de publicação, permissões, seleção de pastas, versão do SDK, API Vercel ou identidade/assinatura Android.
+- Análise, testes Dart e geração do APK ainda precisam ser executados no GitHub Actions; o job #7 terminou antes dessas duas últimas etapas.
+- APK esperado: `Meu Vercel-v1.5.1.apk` em GitHub Releases, sem ZIP de Artifacts.
+
 ## Versão 1.5.0+7 (14/10/2026)
 - Após publicar pasta, arquivos avulsos ou ZIP, o aplicativo abre imediatamente a tela do deploy recebido pela Vercel, sem confundir ID aceito com site pronto.
 - Acompanhamento somente durante a visualização da tela: até 12 consultas GET a cada 5 segundos; encerra em READY, ERROR ou CANCELED e pausa ao sair do aplicativo. Sem serviço em segundo plano.

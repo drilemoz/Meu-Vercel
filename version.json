@@ -1,6 +1,6 @@
 {
-  "versionName": "1.5.0",
-  "versionCode": 7,
+  "versionName": "1.5.1",
+  "versionCode": 8,
   "applicationId": "app.meuvercel.android",
   "backupFormat": 1,
   "flutter": "3.35.7"
