@@ -6,7 +6,7 @@ analyzer:
 
 linter:
   rules:
-    curly_braces_in_flow_control: false
+    curly_braces_in_flow_control_structures: false
     prefer_const_constructors: false
     prefer_const_literals_to_create_immutables: false
     sort_child_properties_last: false

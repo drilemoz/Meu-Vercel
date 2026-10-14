@@ -97,3 +97,8 @@ com `+` enquanto houver páginas; logs limitados a 200 eventos recentes; cache s
 nos módulos documentados; sem monitoramento permanente, editor DNS, upload de fontes
 ou suporte a Custom Environments. Nenhum recurso da 1.0.1 foi removido; a 1.0.2 altera somente o workflow, a
 verificação estrutural, os metadados, novidades e documentação.
+
+## Correção de análise do workflow #2 (14/10/2026)
+- Corrigido o identificador da regra de lint `curly_braces_in_flow_control_structures` em `analysis_options.yaml`. A configuração mantém desativada a exigência estilística de chaves em condicionais, sem modificar a lógica do aplicativo.
+- Evidência anterior: 14 ocorrências no `flutter analyze` (1 regra desconhecida e 13 ocorrências da regra de chaves).
+- Pendente: executar `flutter analyze`, `flutter test` e build Android no GitHub Actions após esta correção. Ferramentas Flutter/Dart não disponíveis neste ambiente.
