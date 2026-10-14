@@ -1,0 +1,138 @@
+name: Meu Vercel — validar e gerar APK
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publicar no GitHub Releases (exige assinatura persistente)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Análise, testes, build e Artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      signing: ${{ steps.signing.outputs.mode }}
+      artifact: ${{ steps.version.outputs.artifact }}-${{ steps.signing.outputs.mode }}
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Instalar plataforma e ferramentas Android
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.0.12077973'
+      - name: Configurar Flutter fixado
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - name: Conferir versão, pacote e metadados
+        id: version
+        run: |
+          python3 scripts/check_version.py
+          python3 - <<'PY'
+          import json, os
+          data = json.load(open('version.json'))
+          version = data['versionName']
+          if os.environ['GITHUB_REF'].startswith('refs/tags/') and os.environ['GITHUB_REF_NAME'] != 'v' + version:
+              raise SystemExit('A tag deve corresponder à versão do projeto')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'version={version}\nartifact=Meu-Vercel-v{version}\napk=Meu Vercel.-v{version}.apk\n')
+          PY
+      - name: Instalar dependências
+        run: flutter pub get
+      - name: Analisar código Dart
+        run: flutter analyze
+      - name: Executar testes automatizados
+        run: flutter test --coverage
+      - name: Preparar assinatura persistente ou identificar build de teste
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: python3 scripts/configure_signing.py
+      - name: Compilar APK Release
+        env:
+          MEU_VERCEL_TEST_SIGNING: ${{ steps.signing.outputs.mode == 'teste' && 'true' || 'false' }}
+        run: |
+          chmod +x android/gradlew
+          flutter build apk --release
+      - name: Verificar assinatura e preparar APK e checksum
+        env:
+          APK_NAME: ${{ steps.version.outputs.apk }}
+          SIGNING_MODE: ${{ steps.signing.outputs.mode }}
+        run: |
+          mkdir -p artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk "artifacts/$APK_NAME"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "artifacts/$APK_NAME" > artifacts/SIGNATURE.txt
+          python3 scripts/package_apk.py
+          cp pubspec.lock artifacts/pubspec.lock
+      - name: Preservar APK e checksum nos Artifacts antes da publicação
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.artifact }}-${{ steps.signing.outputs.mode }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preservar evidências de testes e dependências
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-${{ github.run_id }}
+          path: |
+            coverage/lcov.info
+            pubspec.lock
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Remover material de assinatura do runner
+        if: always()
+        run: rm -f android/key.properties android/release-keystore.jks
+  release:
+    name: Publicar versão com assinatura persistente
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Exigir assinatura estável para publicação
+        env:
+          SIGNING_MODE: ${{ needs.build.outputs.signing }}
+        run: |
+          if [ "$SIGNING_MODE" != 'estavel' ]; then
+            echo '::error::Release recusada: APK de teste. Configure os quatro Secrets de assinatura. O Artifact do build permanece disponível.'
+            exit 1
+          fi
+      - name: Baixar código e notas da versão
+        uses: actions/checkout@v4
+      - name: Baixar Artifact já preservado
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: artifacts
+      - name: Publicar APK e checksum no GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          gh release create "v$RELEASE_VERSION" artifacts/*.apk artifacts/*.sha256 artifacts/SIGNATURE.txt artifacts/SIGNING.txt \
+            --target "$GITHUB_SHA" --title "Meu Vercel $RELEASE_VERSION" --notes-file RELEASE_NOTES.md
+          echo 'Release publicada. O Artifact permanece disponível mesmo se uma nova publicação falhar.' >> "$GITHUB_STEP_SUMMARY"

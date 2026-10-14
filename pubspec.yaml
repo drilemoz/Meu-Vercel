@@ -1,0 +1,25 @@
+name: meu_vercel
+description: Gerenciador Android da Vercel, com API oficial e interface em português.
+publish_to: none
+version: 1.0.1+1
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+  flutter: '>=3.35.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  dio: 5.9.0
+  flutter_secure_storage: 9.2.4
+  shared_preferences: 2.5.3
+  file_picker: 10.3.3
+  crypto: 3.0.6
+  url_launcher: 6.3.2
+  flutter_local_notifications: 19.5.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 5.0.0
+flutter:
+  uses-material-design: true

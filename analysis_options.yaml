@@ -1,0 +1,12 @@
+include: package:flutter_lints/flutter.yaml
+analyzer:
+  errors:
+    unused_import: error
+    unused_local_variable: error
+
+linter:
+  rules:
+    curly_braces_in_flow_control: false
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    sort_child_properties_last: false

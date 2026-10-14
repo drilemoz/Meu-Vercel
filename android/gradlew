@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Source-only Gradle bootstrap. Downloads the official distribution and checks SHA-256.
+set -euo pipefail
+TASK_GRADLE_VERSION=8.13
+TASK_GRADLE_ROOT="${GRADLE_USER_HOME:-$HOME/.gradle}/meu-vercel-bootstrap"
+TASK_GRADLE_DIR="$TASK_GRADLE_ROOT/gradle-$TASK_GRADLE_VERSION"
+if [[ ! -x "$TASK_GRADLE_DIR/bin/gradle" ]]; then
+  mkdir -p "$TASK_GRADLE_ROOT"
+  TASK_GRADLE_TMP=$(mktemp -d "$TASK_GRADLE_ROOT/download.XXXXXX")
+  trap 'rm -rf "$TASK_GRADLE_TMP"' EXIT
+  TASK_GRADLE_URL="https://services.gradle.org/distributions/gradle-$TASK_GRADLE_VERSION-bin.zip"
+  curl --fail --location --proto '=https' --proto-redir '=https' --retry 2 "$TASK_GRADLE_URL" -o "$TASK_GRADLE_TMP/gradle.zip"
+  curl --fail --location --proto '=https' --proto-redir '=https' "$TASK_GRADLE_URL.sha256" -o "$TASK_GRADLE_TMP/hash"
+  TASK_GRADLE_HASH=$(tr -d '\r\n ' < "$TASK_GRADLE_TMP/hash")
+  [[ "$TASK_GRADLE_HASH" =~ ^[a-f0-9]{64}$ ]] || { echo 'Checksum Gradle inválido' >&2; exit 1; }
+  printf '%s  %s\n' "$TASK_GRADLE_HASH" "$TASK_GRADLE_TMP/gradle.zip" | sha256sum --check --status
+  unzip -q "$TASK_GRADLE_TMP/gradle.zip" -d "$TASK_GRADLE_TMP"
+  mv "$TASK_GRADLE_TMP/gradle-$TASK_GRADLE_VERSION" "$TASK_GRADLE_DIR"
+fi
+exec "$TASK_GRADLE_DIR/bin/gradle" "$@"

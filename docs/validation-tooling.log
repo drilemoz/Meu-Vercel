@@ -1,0 +1,10 @@
+test_checksum_and_explicit_test_provenance (__main__.ToolingTests.test_checksum_and_explicit_test_provenance) ... ok
+test_invalid_base64_does_not_leak_private_content (__main__.ToolingTests.test_invalid_base64_does_not_leak_private_content) ... ok
+test_java_properties_escape_preserves_fixture (__main__.ToolingTests.test_java_properties_escape_preserves_fixture) ... ok
+test_missing_secrets_identifies_test_signing (__main__.ToolingTests.test_missing_secrets_identifies_test_signing) ... ok
+test_partial_signing_rejected (__main__.ToolingTests.test_partial_signing_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.220s
+
+OK
