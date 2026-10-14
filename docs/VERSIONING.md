@@ -1,3 +1,10 @@
+## Versão 1.5.2+9 (14/10/2026)
+- Corrigido erro de ciclo de vida do Flutter identificado no workflow #8: `TextEditingController was used after being disposed` em diálogo de confirmação de produção. Agora o controller pertence ao `State` da própria janela e só é descartado quando a rota termina sua animação de saída.
+- Aplicado o mesmo cuidado ao formulário reutilizável para criar/editar recursos, inclusive limpeza dos campos sensíveis após fechamento; confirmações e rótulos permanecem inalterados.
+- Dois testes widget adicionados para confirmar publicação e formulário após a animação de saída; teste existente reforçado com verificação de exceções. O segundo erro `_dependents.isEmpty` pode ter sido efeito em cascata do primeiro, e exige reexecução Flutter no CI.
+- Preservados applicationId, assinatura, backups, API Vercel, seleção de pasta/ZIP, publicação Preview/Production e geração de somente `Meu Vercel-v1.5.2.apk` em GitHub Releases.
+- CI do workflow #8: `flutter analyze` aprovado; 54 de 56 testes aprovados; 2 testes widget com falha. Correção local ainda requer `flutter test` e build Android no GitHub Actions.
+
 ## Versão 1.5.1+8 (14/10/2026)
 - Corrigido o `flutter analyze` do workflow #7 (`unnecessary_import`): retirada a importação redundante de `dart:typed_data` no seletor SAF e no respectivo teste. O tipo `Uint8List` permanece disponível via `package:flutter/services.dart`.
 - Nenhuma alteração no fluxo de publicação, permissões, seleção de pastas, versão do SDK, API Vercel ou identidade/assinatura Android.
@@ -43,9 +50,9 @@
 
 # Versionamento
 
-Estado atual: **1.5.1+8**, Android versionName **1.5.1**, versionCode **8**.
+Estado atual: **1.5.2+9**, Android versionName **1.5.2**, versionCode **9**.
 Primeira entrega: 1.0.1+1. A 1.0.2 corrige a instalação SDK no workflow.
-Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.5.1.apk`.
+Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.5.2.apk`.
 
 Cada versão entregue/publicada depois desta aumenta o versionCode para o próximo
 inteiro não usado. Exemplo seguinte: correção 1.0.3+3, função compatível 1.1.0+4. SemVer:

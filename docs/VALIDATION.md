@@ -1,3 +1,29 @@
+# Correção do workflow #8 — 1.5.2+9 (14/10/2026)
+
+## Evidência dos logs enviados
+- O `flutter analyze` do workflow #8 **passou**: `No issues found! (ran in 13.3s)`.
+- `flutter test --coverage` executou 56 testes e terminou com **54 aprovados e 2 falhas** (`test/widget_test.dart`).
+- Primeiro teste: `confirmação de produção exibe Publicar, não Excluir`, após cancelar o diálogo; exceção primária `A TextEditingController was used after being disposed` em `RawGestureDetector` / `_AnimatedState.didUpdateWidget`, seguida por `_dependents.isEmpty`.
+- Segundo teste: `deploy acompanhado alcança READY, oferece copiar e abrir`, com `_dependents.isEmpty`; a falha pode ser consequência do estado de teste anterior, ainda não comprovado.
+- A execução **não chegou** ao build Android nem à publicação da Release.
+
+## Mudanças
+- Diálogo de confirmação passou a ser um StatefulWidget que detém seu `TextEditingController` e o descarta no `State.dispose`, após a remoção do diálogo.
+- O diálogo de formulário segue o mesmo padrão de propriedade e limpeza, evitando o descarte imediato após `Navigator.pop` enquanto ainda existe uma rota em saída.
+- Dois testes widget adicionais verificam publicação confirmada e formulário concluído após `pumpAndSettle`; teste existente verifica ausência de exceções após cancelamento.
+- VersionName **1.5.2**, versionCode **9**, metadados e notas sincronizados; sem alterar permissões, identidade Android ou material de assinatura.
+
+## Validação desta entrega
+- `python3 scripts/check_version.py`: **aprovado** (`1.5.2+9`, identidade `app.meuvercel.android`, nome do APK coerente).
+- `python3 scripts/check_structure.py`: **aprovado** (35 arquivos Dart com delimitadores balanceados e arquivos JSON/XML/workflow válidos estruturalmente; não executa Dart).
+- `python3 scripts/test_tooling.py`: **5/5 aprovados** (mecanismos de assinatura e empacotamento).
+- `bash -n android/gradlew`: **aprovado**.
+- Regressões widget incluídas em `test/widget_test.dart`, **não executadas localmente**.
+- `flutter analyze`, `flutter test --coverage`, `flutter build apk --release`: **não executados localmente**, Flutter/Android SDK indisponíveis.
+- Reexecutar o workflow e verificar aprovação dos testes, geração e assinatura de `Meu Vercel-v1.5.2.apk`.
+
+---
+
 # Correção do workflow #7 — 1.5.1+8 (14/10/2026)
 
 ## Evidência do log recebido

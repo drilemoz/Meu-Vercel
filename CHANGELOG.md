@@ -1,3 +1,10 @@
+## Versão 1.5.2+9 (14/10/2026)
+- Corrigido erro de ciclo de vida do Flutter identificado no workflow #8: `TextEditingController was used after being disposed` em diálogo de confirmação de produção. Agora o controller pertence ao `State` da própria janela e só é descartado quando a rota termina sua animação de saída.
+- Aplicado o mesmo cuidado ao formulário reutilizável para criar/editar recursos, inclusive limpeza dos campos sensíveis após fechamento; confirmações e rótulos permanecem inalterados.
+- Dois testes widget adicionados para confirmar publicação e formulário após a animação de saída; teste existente reforçado com verificação de exceções. O segundo erro `_dependents.isEmpty` pode ter sido efeito em cascata do primeiro, e exige reexecução Flutter no CI.
+- Preservados applicationId, assinatura, backups, API Vercel, seleção de pasta/ZIP, publicação Preview/Production e geração de somente `Meu Vercel-v1.5.2.apk` em GitHub Releases.
+- CI do workflow #8: `flutter analyze` aprovado; 54 de 56 testes aprovados; 2 testes widget com falha. Correção local ainda requer `flutter test` e build Android no GitHub Actions.
+
 ## Versão 1.5.1+8 (14/10/2026)
 - Corrigido o `flutter analyze` do workflow #7 (`unnecessary_import`): retirada a importação redundante de `dart:typed_data` no seletor SAF e no respectivo teste. O tipo `Uint8List` permanece disponível via `package:flutter/services.dart`.
 - Nenhuma alteração no fluxo de publicação, permissões, seleção de pastas, versão do SDK, API Vercel ou identidade/assinatura Android.

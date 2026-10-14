@@ -25,7 +25,7 @@ Nos detalhes de um projeto **estático sem Git e sem framework**, toque em **Pub
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão atual **1.5.1**, versionCode **8**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.5.2**, versionCode **9**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -68,6 +68,12 @@ A correção precisa ser executada novamente no GitHub Actions para confirmar o 
 - Publicação seguida de tela de acompanhamento: consulta temporária em primeiro plano (12 vezes, a cada 5 s, com interrupção em status terminal), botões Copiar URL e Abrir site, atualização manual; não garante que domínio customizado já esteja pronto.
 - Importação GitHub: cria projeto Vercel usando repositório já autorizado na integração GitHub da Vercel; não inclui gerenciador de repositórios GitHub.
 - Publicação de **pasta completa**, **arquivos individuais** ou **ZIP** direto do Android para projetos estáticos sem Git/framework; escolha entre Preview e Produção, esta com confirmação digitando o nome exato do projeto. Preserva subpastas ao escolher pasta ou ZIP. Limites: 20 MiB de conteúdo, 120 arquivos, `index.html` na raiz e ZIP de até 12 MiB. Não necessita GitHub.
+
+## Correção 1.5.2+9 (14/10/2026)
+
+- Corrige erro de controller destruído antes da saída da janela de confirmação de publicação, que interrompeu os testes widget do workflow #8.
+- O mesmo padrão foi aplicado aos formulários de dados, sem alterar regras de segurança nem opções de publicação.
+- Regressões adicionais incluídas em `test/widget_test.dart`; exige nova execução de Flutter analyze/test e build no GitHub Actions.
 
 ## Correção 1.5.1+8 (14/10/2026)
 
@@ -113,7 +119,7 @@ O workflow não publica ZIP de Artifacts; mantenha pubspec.lock versionado quand
 
 O workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) roda em
 push para `main`, tags `v*` e execução manual. Instala Flutter/SDK Android, valida
-código e testes, aplica assinatura e gera `Meu Vercel-v1.5.1.apk`. A publicação ocorre
+código e testes, aplica assinatura e gera `Meu Vercel-v1.5.2.apk`. A publicação ocorre
 diretamente em **GitHub Releases → Assets**, contendo **somente o APK**, sem ZIP de
 Artifacts. É um APK compilado pelo GitHub Actions, não por este arquivo ZIP de código.
 

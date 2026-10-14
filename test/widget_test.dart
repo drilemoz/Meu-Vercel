@@ -93,6 +93,41 @@ void main() {
     expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Publicar em produção')).onPressed, isNotNull);
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('confirmação de produção aceita nome e conclui sem descartar controller cedo', (tester) async {
+    bool? confirmed;
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(
+      body: TextButton(onPressed: () async {
+        confirmed = await confirmAction(context, title: 'Publicar?', resource: 'site',
+          description: 'Produção', production: true, destructive: true,
+          confirmLabel: 'Publicar em produção');
+      }, child: const Text('Iniciar'))))));
+    await tester.tap(find.text('Iniciar'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'site');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Publicar em produção'));
+    await tester.pumpAndSettle();
+    expect(confirmed, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('formulário devolve valores e libera campos após fechar', (tester) async {
+    Map<String, String>? result;
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(
+      body: TextButton(onPressed: () async {
+        result = await fieldsDialog(context, 'Novo projeto',
+          {'name': 'Nome', 'token': 'Token'}, secret: {'token'});
+      }, child: const Text('Abrir formulário'))))));
+    await tester.tap(find.text('Abrir formulário'));
+    await tester.pumpAndSettle();
+    expect(tester.widgetList<TextField>(find.byType(TextField)).last.obscureText, true);
+    await tester.enterText(find.byType(TextField).first, 'site');
+    await tester.enterText(find.byType(TextField).last, 'temporario');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    expect(result, {'name': 'site', 'token': 'temporario'});
+    expect(tester.takeException(), isNull);
   });
   testWidgets('deploy acompanhado alcança READY, oferece copiar e abrir', (tester) async {
     var reads = 0;
