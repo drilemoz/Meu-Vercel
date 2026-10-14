@@ -1,3 +1,8 @@
+## Versão 1.1.0+3 (14/10/2026)
+- Tela de login: acesso HTTPS ao painel da Vercel no navegador, botão copiar token e alternância entre texto oculto/visível.
+- Atenção: copiar um token sensível para a área de transferência permite acesso por outros aplicativos; use apenas quando necessário.
+- Testes Flutter e build Android pendentes de execução no GitHub Actions.
+
 # Versionamento
 
 Estado atual: **1.0.2+2**, Android versionName **1.0.2**, versionCode **2**.
@@ -20,7 +25,7 @@ Checklist obrigatório de nova versão:
 5. Rodar `python3 scripts/check_version.py`, `flutter analyze`, `flutter test` e
    `flutter build apk --release` com assinatura persistente.
 6. Atualizar docs/VALIDATION.md com evidências reais, revisar migrações e gerar ZIP.
-7. Conferir APK `Meu Vercel.-v<versionName>.apk`, SHA-256 e certificado.
+7. Conferir APK `Meu Vercel-v<versionName>.apk`, SHA-256 e certificado.
 8. Publicar tag `v<versionName>` somente com validações e chave estável aprovadas.
 
 Não reutilize versionCode, não mude applicationId e não gere nova chave de produção.

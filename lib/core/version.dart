@@ -1,8 +1,8 @@
-const appVersion = '1.0.2';
-const appVersionCode = 2;
+const appVersion = '1.1.0';
+const appVersionCode = 3;
 const applicationId = 'app.meuvercel.android';
 const releaseHighlights = <String>[
-  'Correção do workflow Android: instalação explícita de platform-tools.',
+  'Login: abrir painel Vercel, copiar token e alternar visualização.',
   'Conta pessoal e equipes com token armazenado com segurança.',
   'Projetos, deploys, domínios e variáveis pela API oficial.',
   'Favoritos, cache offline e backup sem credenciais.',

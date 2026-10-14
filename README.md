@@ -1,3 +1,8 @@
+## Versão 1.1.0+3 (14/10/2026)
+- Tela de login: acesso HTTPS ao painel da Vercel no navegador, botão copiar token e alternância entre texto oculto/visível.
+- Atenção: copiar um token sensível para a área de transferência permite acesso por outros aplicativos; use apenas quando necessário.
+- Testes Flutter e build Android pendentes de execução no GitHub Actions.
+
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial

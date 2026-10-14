@@ -13,7 +13,7 @@ da mesma versão ainda não publicada, correções não criam versões artificia
 Sincronize pubspec.yaml, android/version.properties, version.json,
 lib/core/version.dart, README.md, CHANGELOG.md, RELEASE_NOTES.md,
 docs/VERSIONING.md e as novidades no aplicativo. O workflow deriva o nome do APK
-de version.json: `Meu Vercel.-v<versionName>.apk`. Execute scripts/check_version.py.
+de version.json: `Meu Vercel-v<versionName>.apk`. Execute scripts/check_version.py.
 
 Use a mesma chave persistente em todas as versões de produção. Chaves, key.properties,
 tokens e credenciais reais ficam fora do Git e dos ZIPs. Nunca substitua a chave

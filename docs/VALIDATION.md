@@ -1,3 +1,8 @@
+## Versão 1.1.0+3 (14/10/2026)
+- Tela de login: acesso HTTPS ao painel da Vercel no navegador, botão copiar token e alternância entre texto oculto/visível.
+- Atenção: copiar um token sensível para a área de transferência permite acesso por outros aplicativos; use apenas quando necessário.
+- Testes Flutter e build Android pendentes de execução no GitHub Actions.
+
 # Validação real — Meu Vercel 1.0.2+2
 
 Data da entrega: 2026-10-14 (UTC). Nenhum token real ou chave de assinatura foi usado.
@@ -102,3 +107,5 @@ verificação estrutural, os metadados, novidades e documentação.
 - Corrigido o identificador da regra de lint `curly_braces_in_flow_control_structures` em `analysis_options.yaml`. A configuração mantém desativada a exigência estilística de chaves em condicionais, sem modificar a lógica do aplicativo.
 - Evidência anterior: 14 ocorrências no `flutter analyze` (1 regra desconhecida e 13 ocorrências da regra de chaves).
 - Pendente: executar `flutter analyze`, `flutter test` e build Android no GitHub Actions após esta correção. Ferramentas Flutter/Dart não disponíveis neste ambiente.
+
+- Workflow atualizado para publicar somente APK em GitHub Releases; compilação em CI pendente. Sem assinatura persistente, publicação marcada como pré-lançamento de teste.
