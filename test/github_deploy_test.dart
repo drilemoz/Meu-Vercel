@@ -95,4 +95,67 @@ void main() {
     }
     expect(adapter.requests, isEmpty);
   });
+  test('seleção de arquivos diretos mantém nomes e SHA-1', () {
+    final files = StaticSite.prepare([
+      (path: 'index.html', bytes: Uint8List.fromList(utf8.encode('<h1>Olá</h1>'))),
+      (path: 'assets/styles.css', bytes: Uint8List.fromList(utf8.encode('body {}'))),
+    ]);
+    expect(files.length, 2);
+    expect(files[1].path, 'assets/styles.css');
+    StaticSite.validate(files);
+  });
+  test('seleção direta impede traversal, credenciais, colisões e sem index', () {
+    for (final bad in ['../index.html', '.env.local', '.ssh/id_rsa',
+      'site/private.key', '/index.html', r'css\bad.css', 'C:/index.html',
+      'foo//index.html', '.vercel/output/index.html', 'credentials.json']) {
+      expect(() => StaticSite.prepare([
+        (path: 'index.html', bytes: Uint8List(1)),
+        (path: bad, bytes: Uint8List(1)),
+      ]), throwsA(isA<ApiFailure>()), reason: bad);
+    }
+    expect(() => StaticSite.prepare([
+      (path: 'index.html', bytes: Uint8List(1)),
+      (path: 'INDEX.HTML', bytes: Uint8List(1)),
+    ]), throwsA(isA<ApiFailure>()));
+    expect(() => StaticSite.prepare([
+      (path: 'css/site.css', bytes: Uint8List(2)),
+    ]), throwsA(isA<ApiFailure>()));
+  });
+  test('validação rejeita checksums inventados antes de enviar', () async {
+    final adapter = FakeAdapter((_) async => response({}));
+    final api = fakeApi(adapter); addTearDown(api.close);
+    final invalid = [(path: 'index.html', bytes: Uint8List(2), sha: 'forged')];
+    await expectLater(VercelRepository(api).deployStatic(
+      const Project(id: 'prj', name: 'static'), invalid,
+    ), throwsA(isA<ApiFailure>()));
+    expect(adapter.requests, isEmpty);
+  });
+  test('publicação Production inclui target e mantém equipe/projeto', () async {
+    final adapter = FakeAdapter((req) async => response(
+      req.uri.path == '/v13/deployments' ? {'id': 'dpl_prod'} : {}));
+    final api = fakeApi(adapter); addTearDown(api.close);
+    final files = StaticSite.prepare([
+      (path: 'index.html', bytes: Uint8List.fromList(utf8.encode('ok'))),
+    ]);
+    final repository = VercelRepository(api, team: 'team_42');
+    expect(await repository.deployStatic(
+      const Project(id: 'prj_42', name: 'site-estatico'), files,
+      target: 'production'), 'dpl_prod');
+    final deployment = adapter.requests.last;
+    final body = deployment.data as Map;
+    expect(body['target'], 'production');
+    expect(body['project'], 'prj_42');
+    expect(body['name'], 'site-estatico');
+    expect(deployment.queryParameters['teamId'], 'team_42');
+  });
+  test('ambiente inválido é recusado antes de tocar rede', () async {
+    final adapter = FakeAdapter((_) async => response({}));
+    final api = fakeApi(adapter); addTearDown(api.close);
+    final files = StaticSite.prepare([(path: 'index.html', bytes: Uint8List(1))]);
+    await expectLater(VercelRepository(api).deployStatic(
+      const Project(id: 'prj', name: 'static'), files, target: 'custom'),
+      throwsA(isA<ApiFailure>()));
+    expect(adapter.requests, isEmpty);
+  });
+
 }

@@ -44,7 +44,7 @@ class InfoLine extends StatelessWidget {
     subtitle: SelectableText(value?.isNotEmpty == true ? value! : 'Não informado'));
 }
 Future<bool> confirmAction(BuildContext context, {required String title, required String resource,
-  required String description, bool destructive = false, bool production = false}) async {
+  required String description, bool destructive = false, bool production = false, String? confirmLabel}) async {
   final controller = TextEditingController();
   try {
     return await showDialog<bool>(context: context, builder: (context) => StatefulBuilder(builder: (context, update) => AlertDialog(
@@ -56,7 +56,7 @@ Future<bool> confirmAction(BuildContext context, {required String title, require
             decoration: InputDecoration(labelText: 'Digite $resource para confirmar'), onChanged: (_) => update(() {}))]])),
       actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
         FilledButton(onPressed: !destructive || controller.text == resource ? () => Navigator.pop(context, true) : null,
-          child: Text(destructive ? 'Excluir' : 'Confirmar'))])) ) ?? false;
+          child: Text(confirmLabel ?? (destructive ? 'Excluir' : 'Confirmar')))])) ) ?? false;
   } finally { controller.dispose(); }
 }
 void feedback(BuildContext context, String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));

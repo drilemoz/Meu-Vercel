@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meu_vercel/core/controller.dart';
 import 'package:meu_vercel/core/storage.dart';
 import 'package:meu_vercel/features/deployments.dart';
+import 'package:meu_vercel/features/common.dart';
+import 'package:meu_vercel/core/models.dart';
 import 'package:meu_vercel/main.dart';
 import 'support.dart';
 
@@ -74,4 +76,46 @@ void main() {
     expect(adapter.requests.where((r) => r.method != 'GET'), isEmpty);
     await tester.pumpWidget(const SizedBox()); app.dispose();
   });
+  testWidgets('confirmação de produção exibe Publicar, não Excluir', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(
+      body: TextButton(onPressed: () async {
+        await confirmAction(context, title: 'Publicar?', resource: 'site',
+          description: 'Produção', production: true, destructive: true,
+          confirmLabel: 'Publicar em produção');
+      }, child: const Text('Iniciar'))))));
+    await tester.tap(find.text('Iniciar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Publicar em produção'), findsOneWidget);
+    expect(find.text('Excluir'), findsNothing);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Publicar em produção')).onPressed, isNull);
+    await tester.enterText(find.byType(TextField), 'site');
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Publicar em produção')).onPressed, isNotNull);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+  });
+  testWidgets('deploy acompanhado alcança READY, oferece copiar e abrir', (tester) async {
+    var reads = 0;
+    final adapter = FakeAdapter((req) async {
+      if (req.uri.path.startsWith('/v13/deployments/')) {
+        reads++;
+        return response({'id': 'dpl_site', 'name': 'site',
+          'readyState': 'READY', 'target': 'preview', 'url': 'site.vercel.app'});
+      }
+      return response({});
+    });
+    final app = await cachedApp(adapter);
+    await tester.pumpWidget(MaterialApp(home: DeploymentScreen(app,
+      const Deployment(id: 'dpl_site', name: 'site', status: 'QUEUED', environment: 'preview'),
+      trackOnOpen: true)));
+    await tester.pumpAndSettle();
+    expect(reads, 1);
+    expect(find.text('Concluído'), findsOneWidget);
+    expect(find.text('Abrir site'), findsOneWidget);
+    expect(find.byTooltip('Copiar URL'), findsOneWidget);
+    expect(find.textContaining('A Vercel confirmou READY.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    app.dispose();
+  });
+
 }

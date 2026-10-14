@@ -1,3 +1,15 @@
+## v1.5.0: consulta de status após deploy
+
+Após `POST /v13/deployments`, o aplicativo utiliza o ID retornado somente para `GET /v13/deployments/{id}`. Ele consulta até 12 vezes, com intervalo de 5 s, **apenas enquanto a tela está aberta e o app em primeiro plano**. O acompanhamento encerra ao receber `READY`, `ERROR` ou `CANCELED`; erros de rede param a consulta e permitem atualização manual. Não há polling em segundo plano nem garantias sobre propagação de domínio personalizado. URLs externas são aceitas apenas quando HTTPS, sem credenciais embutidas, fragmentos, portas alternativas ou endereços locais.
+
+## v1.4.0: deploy de pasta, múltiplos arquivos ou ZIP; Preview e Produção
+
+- O Android usa `ACTION_OPEN_DOCUMENT_TREE` para listar e ler apenas o diretório autorizado pelo usuário, preservando os caminhos relativos. Nenhuma permissão de armazenamento amplo ou URI persistente é solicitada. Seleção avulsa pelo file_picker fornece apenas nomes de arquivo da raiz.
+- O app valida tudo **antes do primeiro envio**: `index.html` na raiz, máximo 120 arquivos e 20 MiB, exclusão de caminhos perigosos e arquivos de credenciais conhecidos; ZIP tem ainda limite de 12 MiB compactados. Essa validação não consegue identificar **todo** segredo que possa estar embutido em HTML/JS.
+- `POST /v2/files` recebe os bytes com SHA-1 no header `x-vercel-digest`, com escopo de equipe se houver.
+- `POST /v13/deployments` recebe `files: [{file, sha, size}]`, `project` e `projectSettings.framework=null`. Para Preview, `target` é omitido. Para Produção, é `target: production`, mas a interface exige confirmação textual do nome exato do projeto e não é opção padrão.
+- O deploy pode falhar, demorar, ou exigir permissões/planos: ID recebido não equivale a READY, e este fluxo não garante promoção automática em configurações Vercel personalizadas.
+
 # API oficial e escopo
 
 Base exclusiva: `https://api.vercel.com`. Authorization Bearer só é anexado a esse
@@ -31,8 +43,7 @@ Não há total de projetos inventado: o painel mostra carregados e sinal `+` se 
 
 Busca e filtros globais operam sobre itens já carregados. Histórico de projeto usa
 filtros remotos de status e target. Production é target=production; Preview usa o
-mecanismo padrão da API sem target de produção ao redeploy. Nenhum upload arbitrário
-ou deploy hook está incluído. Redeploy pode depender de retenção do deploy de origem,
+mecanismo padrão da API sem target de produção ao redeploy. Uploads de site estático foram adicionados nas versões 1.3/1.4; deploy hook continua indisponível. Redeploy pode depender de retenção do deploy de origem,
 integração Git, plano ou permissões. Os eventos são somente o recorte recente de
 até 200, não uma promessa de histórico de logs completo.
 

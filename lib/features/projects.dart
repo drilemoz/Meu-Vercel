@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +7,7 @@ import '../core/controller.dart';
 import '../core/models.dart';
 import '../core/project_names.dart';
 import '../core/static_deploy.dart';
+import '../core/android_site_folder.dart';
 import '../core/errors.dart';
 import 'common.dart';
 import 'dashboard.dart';
@@ -131,9 +133,61 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
     await run(() async { await app.repository.updateProject(project.id, {for (final e in input.entries) e.key: e.value.trim().isEmpty ? null : e.value.trim()});
       project = await app.repository.project(project.id); current = true; await app.sync(force: true); }, success: 'Configurações salvas.');
   }
+  bool get _supportsStaticFiles => project.repository == null &&
+    (project.framework == null || project.framework == 'other');
+
+  Future<void> _publishFiles() async {
+    if (!_supportsStaticFiles) {
+      feedback(context, 'Disponível somente em projetos estáticos sem Git/framework.');
+      return;
+    }
+    await run(() async {
+      final chosen = await FilePicker.platform.pickFiles(
+        type: FileType.any, allowMultiple: true, withData: false);
+      if (chosen == null || chosen.files.isEmpty) return;
+      if (chosen.files.length > StaticSite.maxFiles) {
+        throw const ApiFailure(FailureKind.invalid, 'Selecione no máximo 120 arquivos.');
+      }
+      final sources = <SiteSource>[];
+      var total = 0;
+      for (final file in chosen.files) {
+        // Multi-file picker supplies only base names, never folder structure.
+        StaticSite.checkPath(file.name);
+        final path = file.path;
+        if (path == null) {
+          throw const ApiFailure(FailureKind.invalid, 'Arquivo não acessível. Use a seleção de pasta ou ZIP.');
+        }
+        final selected = File(path);
+        final size = await selected.length();
+        if (size > StaticSite.maxSiteBytes - total) {
+          throw const ApiFailure(FailureKind.invalid, 'Arquivos ultrapassam 20 MiB.');
+        }
+        final bytes = await selected.readAsBytes();
+        if (bytes.length > StaticSite.maxSiteBytes - total) {
+          throw const ApiFailure(FailureKind.invalid, 'Arquivos ultrapassam 20 MiB.');
+        }
+        total += bytes.length;
+        sources.add((path: file.name, bytes: bytes));
+      }
+      await _startDeployment(StaticSite.prepare(sources));
+    });
+  }
+
+  Future<void> _publishFolder() async {
+    if (!_supportsStaticFiles) {
+      feedback(context, 'Disponível somente em projetos estáticos sem Git/framework.');
+      return;
+    }
+    await run(() async {
+      final files = await AndroidSiteFolder.pick();
+      if (files == null) return;
+      await _startDeployment(files);
+    });
+  }
+
   Future<void> _publishZip() async {
-    if (project.repository != null || (project.framework != null && project.framework != 'other')) {
-      feedback(context, 'Publicação ZIP disponível apenas para projeto estático sem Git e sem framework.');
+    if (!_supportsStaticFiles) {
+      feedback(context, 'Disponível somente em projetos estáticos sem Git/framework.');
       return;
     }
     await run(() async {
@@ -141,29 +195,90 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
         type: FileType.custom, allowedExtensions: ['zip'], withData: false);
       if (chosen == null || chosen.files.isEmpty) return;
       final path = chosen.files.single.path;
-      if (path == null) throw const ApiFailure(FailureKind.invalid, 'Não foi possível acessar o ZIP selecionado.');
+      if (path == null) {
+        throw const ApiFailure(FailureKind.invalid, 'Não foi possível acessar o ZIP selecionado.');
+      }
       final selected = File(path);
       final length = await selected.length();
       if (length <= 0 || length > StaticZip.maxZipBytes) {
         throw const ApiFailure(FailureKind.invalid, 'O ZIP deve ter no máximo 12 MiB.');
       }
       final files = await compute(StaticZip.prepare, await selected.readAsBytes());
-      final totalBytes = files.fold<int>(0, (sum, item) => sum + item.bytes.length);
-      final preview = files.take(8).map((item) => item.path).join('\n');
-      final more = files.length > 8 ? '\n... e mais ${files.length - 8} arquivos' : ''; 
-      if (!mounted) return;
-      if (!await confirmAction(context, title: 'Publicar ZIP em Preview?', resource: project.name,
-        description: '${files.length} arquivos, ${(totalBytes / 1024).toStringAsFixed(1)} KiB, no projeto ${project.name} (${app.activeName}). '
-          'Esta operação enviará seus arquivos à Vercel e poderá gerar consumo de recursos. '
-          'O deploy será exclusivamente Preview, não Production.\n\nArquivos:\n$preview$more')) return;
-      if (mounted) setState(() { uploaded = 0; uploadTotal = files.length; });
-      final id = await app.repository.deployStaticPreview(project, files, onProgress: (completed, total) {
-        if (mounted) setState(() { uploaded = completed; uploadTotal = total; });
-      });
-      await app.sync(force: true);
-      if (mounted) feedback(context, 'Preview solicitado ($id). Confira o status em Deploys.');
+      await _startDeployment(files);
     });
-    if (mounted) setState(() { uploaded = 0; uploadTotal = 0; });
+  }
+
+  Future<String?> _chooseTarget(List<SiteFile> files) async {
+    if (!mounted) return null;
+    final totalBytes = files.fold<int>(0, (sum, item) => sum + item.bytes.length);
+    final preview = files.take(10).map((item) => item.path).join('\n');
+    final more = files.length > 10 ? '\n... e mais ${files.length - 10} arquivos' : '';
+    var chosen = 'preview';
+    return showDialog<String>(context: context, builder: (dialogContext) =>
+      StatefulBuilder(builder: (context, update) => AlertDialog(
+        title: const Text('Conferir publicação'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Projeto: ${project.name}\nConta: ${app.activeName}\n'
+              '${files.length} arquivos · ${(totalBytes / 1024).toStringAsFixed(1)} KiB'),
+            const SizedBox(height: 12),
+            const Text('Arquivos que serão enviados:'),
+            SelectableText('$preview$more', style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 16),
+            const Text('Ambiente:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, children: [
+              ChoiceChip(label: const Text('Preview'), selected: chosen == 'preview',
+                onSelected: (_) => update(() => chosen = 'preview')),
+              ChoiceChip(label: const Text('Produção'), selected: chosen == 'production',
+                onSelected: (_) => update(() => chosen = 'production')),
+            ]),
+            const SizedBox(height: 12),
+            Text(chosen == 'preview'
+              ? 'Cria uma versão de teste, sem substituir o site em produção.'
+              : 'ATENÇÃO: uma publicação bem-sucedida em produção pode substituir o site público e afetar visitantes.',
+              style: TextStyle(color: chosen == 'production'
+                ? Theme.of(context).colorScheme.error : null)),
+            const SizedBox(height: 8),
+            const Text('Serão enviados arquivos à Vercel. Isso consome internet e pode usar a cota do plano.'),
+          ])),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, chosen), child: const Text('Continuar'))],
+      )));
+  }
+
+  Future<void> _startDeployment(List<SiteFile> files) async {
+    if (!mounted) return;
+    final target = await _chooseTarget(files);
+    if (!mounted || target == null) return;
+    final production = target == 'production';
+    final confirmed = await confirmAction(context,
+      title: production ? 'Confirmar publicação em PRODUÇÃO?' : 'Criar publicação Preview?',
+      resource: project.name,
+      destructive: production, production: production,
+      confirmLabel: production ? 'Publicar em produção' : 'Enviar Preview',
+      description: production
+        ? 'Digite exatamente o nome do projeto para autorizar a publicação em produção '
+          'na conta ${app.activeName}. Se o deploy ficar READY, os domínios públicos '
+          'podem mudar. Não há reversão automática.'
+        : 'Enviar os arquivos selecionados para um novo deploy Preview. '
+          'O site atual em produção não será substituído.');
+    if (!mounted || !confirmed) return;
+    try {
+      setState(() { uploaded = 0; uploadTotal = files.length; });
+      final id = await app.repository.deployStatic(project, files, target: target,
+        onProgress: (completed, total) {
+          if (mounted) setState(() { uploaded = completed; uploadTotal = total; });
+        });
+      if (!mounted) return;
+      feedback(context, 'Deploy aceito pela Vercel. Acompanhe o status antes de compartilhar.');
+      unawaited(app.sync(force: true)); // Refresh lists without delaying status tracking.
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DeploymentScreen(
+        app, Deployment(id: id, name: project.name, status: 'QUEUED', environment: target),
+        trackOnOpen: true)));
+    } finally {
+      if (mounted) setState(() { uploaded = 0; uploadTotal = 0; });
+    }
   }
   Future<void> _delete() async {
     if (!await confirmAction(context, title: 'Excluir projeto?', resource: project.name, destructive: true, production: true,
@@ -181,9 +296,19 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
       InfoLine('Framework', project.framework), InfoLine('Repositório Git', project.repository),
       ListTile(leading: const Icon(Icons.drive_file_rename_outline), title: const Text('Renomear projeto'),
         subtitle: const Text('Alterar o nome na Vercel'), onTap: working || app.busy ? null : _rename),
-      ListTile(leading: const Icon(Icons.upload_file_outlined), title: const Text('Publicar ZIP estático'),
-        subtitle: const Text('Escolher ZIP com index.html e enviar para Preview (não Production)'),
-        onTap: working || app.busy ? null : _publishZip),
+      const SectionLabel('Publicar site estático (sem GitHub)'),
+      ListTile(leading: const Icon(Icons.folder_open_outlined), title: const Text('Selecionar pasta do site'),
+        subtitle: const Text('Mantém subpastas (css, js, imagens). Precisa ter index.html na raiz.'),
+        onTap: working || app.busy || !_supportsStaticFiles ? null : _publishFolder),
+      ListTile(leading: const Icon(Icons.library_add_outlined), title: const Text('Selecionar arquivos'),
+        subtitle: const Text('Vários arquivos da raiz, sem subpastas. Inclua index.html.'),
+        onTap: working || app.busy || !_supportsStaticFiles ? null : _publishFiles),
+      ListTile(leading: const Icon(Icons.upload_file_outlined), title: const Text('Selecionar ZIP'),
+        subtitle: const Text('Alternativa para sites estáticos com pastas e index.html.'),
+        onTap: working || app.busy || !_supportsStaticFiles ? null : _publishZip),
+      const Padding(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), child:
+        Text('Após selecionar, escolha Preview ou Produção. Produção exige digitar o nome do projeto. '
+          'Até 120 arquivos e 20 MiB de conteúdo; ZIP de até 12 MiB.')),
       ListTile(leading: const Icon(Icons.rocket_launch_outlined), title: const Text('Histórico de deploys'), trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ProjectDeploymentsScreen(app, project)))),
       ListTile(leading: const Icon(Icons.language), title: const Text('Domínios'), trailing: const Icon(Icons.chevron_right),

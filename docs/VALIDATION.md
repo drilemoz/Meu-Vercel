@@ -1,3 +1,52 @@
+# Validação da versão 1.5.0+7 (14/10/2026)
+
+## Implementação
+- Acompanhamento de deploy após aceite da Vercel: até 12 GETs /v13/deployments/{id}, intervalo de 5 s enquanto a tela permanece aberta; resultado termina em READY, ERROR ou CANCELED.
+- Indicador de status, atualização e pausa manuais, copiar/abrir URL HTTPS segura. URL de deploy não é confundida com verificação de domínio customizado.
+- Texto de confirmação de Produção corrigido: botão agora diz 'Publicar em produção', com exigência de nome exato intacta.
+- Adicionados testes Flutter para as regras de status, URL e confirmação de publicação, além de teste widget da abertura automática de status READY.
+
+## Verificações locais concluídas
+- `python3 scripts/check_version.py`: aprovado, versão **1.5.0+7**, pacote **app.meuvercel.android**, APK nomeado **Meu Vercel-v1.5.0.apk**.
+- `python3 scripts/check_structure.py`: aprovado, 35 arquivos Dart com delimitadores balanceados, JSON/XML/workflow legíveis. Não avalia tipos nem compila Dart.
+- `python3 scripts/test_tooling.py`: 5 testes Python aprovados (assinatura de teste/estável e checksum).
+- `bash -n android/gradlew`: sintaxe do bootstrap shell aprovada.
+- Os testes Dart novos foram escritos mas **não executados**; não se pode inferir sua aprovação apenas pela verificação estrutural.
+
+## Pendente antes de distribuir
+- `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --release`, assinatura real e testes Android físicos (Flutter/Android SDK não instalados neste ambiente).
+- Deploy de teste autenticado Preview/Produção e confirmação de URL/domínio no serviço Vercel. Nenhum token/segredo real foi utilizado.
+
+---
+
+# Validação 1.4.0+6 (14/10/2026)
+
+**Novo escopo:** pasta Android via Storage Access Framework, múltiplos arquivos na raiz, ZIP anterior mantido, opção de Preview/Produção com confirmação reforçada, sem GitHub obrigatório.
+
+## Executado
+
+- `python3 scripts/check_version.py`: aprovado, versão 1.4.0+6 sincronizada com applicationId preservado.
+- `python3 scripts/check_structure.py`: aprovado, 32 arquivos Dart com delimitadores balanceados, metadados/workflow/manifest legíveis. **Não é compilação ou análise de tipos.**
+- `python3 scripts/test_tooling.py`: 5 testes Python aprovados.
+- Testes Dart adicionados para SAF, caminhos, arquivos sensíveis, checksum, ambiente Preview/Production e requisições autenticadas; sua execução está pendente.
+- O ZIP e checksum SHA-256 serão verificados após geração.
+
+## Não executado / exigido antes de distribuição
+
+- Flutter/Dart `flutter pub get`, `flutter analyze`, `flutter test` e `flutter build apk --release` não podem ser executados neste ambiente, onde os SDKs não estão instalados.
+- Teste em aparelho do picker SAF (Android 6 a 16), serviços de nuvem, árvore com subpastas, arquivo sem tamanho informado e cancelamento: pendente.
+- Deploy Preview e deploy Production reais para um projeto descartável autorizado na Vercel: pendentes. **Nenhum upload real foi realizado.**
+- Kotlin nativo não foi compilado com o Flutter embedding/Android SDK; validação sintática isolada não prova integração Android.
+
+## Segurança e restrições
+
+- Seleção de pasta sem leitura global e sem permissão persistente; URI local não é enviado à Vercel.
+- Checagens conservadoras de extensões sensíveis não substituem inspeção de conteúdo do site.
+- Por padrão Preview; Produção requer seleção explícita e confirmação digitando nome do projeto antes de efetuar upload.
+- Em caso de timeout após submissão, conferir os deploys antes de repetir para não criar duplicações.
+
+---
+
 # Validação da v1.3.0+5 (14/10/2026)
 
 ## Passou neste ambiente

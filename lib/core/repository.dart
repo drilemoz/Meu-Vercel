@@ -41,17 +41,18 @@ class VercelRepository {
       if (framework != null && framework.isNotEmpty) 'framework': framework,
     });
   }
-  /// Uploads a static site and creates a Preview only, never a production deploy.
-  /// Returns the newly created deployment ID, not a claim of a READY build.
-  Future<String> deployStaticPreview(Project project, List<SiteFile> files,
-      {void Function(int completed, int total)? onProgress}) async {
+  /// Uploads already-built static assets to Preview or Production.
+  /// A deployment ID means accepted/queued, never READY or deployed to a domain.
+  Future<String> deployStatic(Project project, List<SiteFile> files, {
+      String target = 'preview', void Function(int completed, int total)? onProgress}) async {
+    if (target != 'preview' && target != 'production') {
+      throw const ApiFailure(FailureKind.invalid, 'Ambiente de publicação inválido.');
+    }
     if (project.repository != null || (project.framework != null && project.framework != 'other')) {
       throw const ApiFailure(FailureKind.invalid, 'Use um projeto estático sem Git ou framework vinculado.');
     }
-    if (files.isEmpty || files.length > StaticZip.maxFiles ||
-        !files.any((file) => file.path == 'index.html')) {
-      throw const ApiFailure(FailureKind.invalid, 'Selecione um ZIP de site estático válido.');
-    }
+    // Validate everything before uploading the first byte.
+    StaticSite.validate(files);
     final uploaded = <String>{};
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
@@ -68,10 +69,15 @@ class VercelRepository {
         'file': file.path, 'sha': file.sha, 'size': file.bytes.length,
       }],
       'projectSettings': {'framework': null},
-      // Intentionally omit target: per Vercel API, this creates a Preview.
+      if (target == 'production') 'target': 'production',
     }));
     return requiredString(result, 'id');
   }
+
+  Future<String> deployStaticPreview(Project project, List<SiteFile> files, {
+      void Function(int completed, int total)? onProgress}) =>
+    deployStatic(project, files, onProgress: onProgress);
+
   Future<void> updateProject(String id, Json settings) async {
     await api.write('PATCH', projectPath(id), team: team, body: settings);
   }

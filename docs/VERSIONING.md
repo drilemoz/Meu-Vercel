@@ -1,3 +1,20 @@
+## Versão 1.5.0+7 (14/10/2026)
+- Após publicar pasta, arquivos avulsos ou ZIP, o aplicativo abre imediatamente a tela do deploy recebido pela Vercel, sem confundir ID aceito com site pronto.
+- Acompanhamento somente durante a visualização da tela: até 12 consultas GET a cada 5 segundos; encerra em READY, ERROR ou CANCELED e pausa ao sair do aplicativo. Sem serviço em segundo plano.
+- Status e orientação contextual, atualização manual, botão para copiar URL HTTPS e botão para abrir o endereço no navegador; URL não segura é rejeitada.
+- Corrigido o texto do botão de confirmação de produção, que mostrava 'Excluir' embora a ação fosse publicar. Continua exigindo digitar o nome exato do projeto.
+- Testes Flutter adicionados para regras de acompanhamento, links e confirmação. Sem novas permissões, sem alteração de chaves, tokens, caches ou dependências.
+- Validações locais estruturais aprovadas; flutter analyze/test, build Android e testes reais da Vercel ainda dependem do CI/aparelho.
+
+## Versão 1.4.0+6 (14/10/2026)
+- Publicação de site estático pelo Android sem GitHub: escolher pasta inteira (SAF com subpastas), múltiplos arquivos da raiz ou ZIP.
+- Preview segue como padrão; opção Produção disponível explicitamente, exigindo digitar o nome exato do projeto antes do primeiro upload.
+- Unificação da validação de caminhos, arquivos sensíveis, checksum, 20 MiB / 120 arquivos e `index.html` na raiz. ZIP mantém limite compactado de 12 MiB.
+- Seletor de pastas nativo acessa somente a árvore autorizada nesta sessão, sem permissão ampla de armazenamento.
+- Publicação via API oficial `/v2/files` e `/v13/deployments` com `target: production` apenas quando escolhido; retorno de ID não comprova status READY.
+- Identidade Android, assinatura, GitHub, gerenciamento de projetos, backups e geração de somente APK em Releases preservados.
+- Testes unitários adicionados; build Flutter/Android e deploy em conta de teste pendentes.
+
 ## Versão 1.3.0+5 (14/10/2026)
 - Novo botão **Importar GitHub**: projeto Vercel com `gitRepository` (GitHub), aceitando `dono/repositório` ou URL HTTPS após validação estrita. Requer que a integração GitHub já esteja autorizada na conta Vercel. Não lê repositórios privados por fora da Vercel nem armazena token GitHub.
 - Publicação pelo celular de **ZIP estático** em projeto sem Git/framework, via `/v2/files` com SHA-1 e `/v13/deployments` com referências de arquivos. Apenas Preview; Production não é solicitado. Requer `index.html` na raiz (ou numa única pasta envoltória).
@@ -20,9 +37,9 @@
 
 # Versionamento
 
-Estado atual: **1.3.0+5**, Android versionName **1.3.0**, versionCode **5**.
+Estado atual: **1.4.0+6**, Android versionName **1.4.0**, versionCode **6**.
 Primeira entrega: 1.0.1+1. A 1.0.2 corrige a instalação SDK no workflow.
-Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.3.0.apk`.
+Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel-v1.4.0.apk`.
 
 Cada versão entregue/publicada depois desta aumenta o versionCode para o próximo
 inteiro não usado. Exemplo seguinte: correção 1.0.3+3, função compatível 1.1.0+4. SemVer:

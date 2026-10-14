@@ -1,3 +1,9 @@
+## Novidades 1.4.0+6: publicar sem GitHub
+
+Abra **Projetos → seu projeto estático** e escolha uma das entradas: **Selecionar pasta do site**, **Selecionar arquivos** (todos da raiz) ou **Selecionar ZIP**. Selecione **Preview** (padrão) ou **Produção**; a produção só prossegue depois de digitar o nome exato do projeto na confirmação adicional.
+
+A pasta deve conter `index.html` diretamente na raiz. O seletor Android usa o Storage Access Framework e não pede acesso amplo ao armazenamento. Projetos com repositório Git ou framework não usam este modo; para React/Next/etc., gere os arquivos estáticos antes. O botão de produção solicita o deploy, mas o status **READY** e a publicação em domínio precisam ser verificados em Deploys. Confira as permissões e cotas do plano.
+
 ## Novidades 1.3.0+5
 
 A seção **Projetos** possui **Importar GitHub**. Informe `dono/repo` de um repositório que a Vercel já tenha permissão para acessar. A API da Vercel cria o projeto e configura a integração Git. Verifique o primeiro deploy na Vercel.
@@ -19,7 +25,7 @@ Nos detalhes de um projeto **estático sem Git e sem framework**, toque em **Pub
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão atual **1.3.0**, versionCode **5**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.5.0**, versionCode **7**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -59,8 +65,15 @@ A correção precisa ser executada novamente no GitHub Actions para confirmar o 
 - Alertas locais opcionais para transições de status observadas ao sincronizar.
 - Backup JSON v1 pelo seletor de arquivos Android, checksum SHA-256, validação de
   campos e confirmação antes da restauração; preferências e favoritos, sem tokens.
+- Publicação seguida de tela de acompanhamento: consulta temporária em primeiro plano (12 vezes, a cada 5 s, com interrupção em status terminal), botões Copiar URL e Abrir site, atualização manual; não garante que domínio customizado já esteja pronto.
 - Importação GitHub: cria projeto Vercel usando repositório já autorizado na integração GitHub da Vercel; não inclui gerenciador de repositórios GitHub.
-- Publicação de ZIP estático pelo Android em Preview para projetos sem integração Git/framework. Limits: 12 MiB ZIP, 20 MiB conteúdo, 120 arquivos, `index.html` obrigatório; não publica em Production.
+- Publicação de **pasta completa**, **arquivos individuais** ou **ZIP** direto do Android para projetos estáticos sem Git/framework; escolha entre Preview e Produção, esta com confirmação digitando o nome exato do projeto. Preserva subpastas ao escolher pasta ou ZIP. Limites: 20 MiB de conteúdo, 120 arquivos, `index.html` na raiz e ZIP de até 12 MiB. Não necessita GitHub.
+
+## Novidades 1.5.0+7
+
+Após confirmar **Preview** ou **Produção** e receber o ID da Vercel, o aplicativo mostra automaticamente o status daquele deploy. **READY** significa que a API confirmou a conclusão do deploy, enquanto **ERROR** indica falha; a URL só é apresentada quando a API a fornece. O acompanhamento usa até 12 consultas, com 5 segundos entre elas, somente com a tela aberta e aplicativo ativo; pode ser pausado e reiniciado manualmente. Ele não continua em segundo plano nem garante que o domínio personalizado já esteja configurado. Você pode copiar o endereço HTTPS ou abrir no navegador, inclusive para conferir um Preview.
+
+O botão final de confirmação para produção foi corrigido para **Publicar em produção**; ainda é obrigatório digitar o nome exato do projeto antes do envio. Isso não modifica ou exclui um projeto por engano.
 
 ## Executar e configurar
 
@@ -84,13 +97,13 @@ wrapper binário no ZIP. O CI Ubuntu possui as ferramentas necessárias.
 
 As dependências diretas estão fixadas; `pubspec.lock` não foi fabricado. Gere e
 versione o lock após o primeiro `flutter pub get` aprovado, antes de distribuir.
-O CI preserva o lock resolvido como Artifact para auditoria.
+O workflow não publica ZIP de Artifacts; mantenha pubspec.lock versionado quando for gerado por Flutter.
 
 ## APK e GitHub Actions
 
 O workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) roda em
 push para `main`, tags `v*` e execução manual. Instala Flutter/SDK Android, valida
-código e testes, aplica assinatura e gera `Meu Vercel-v1.2.0.apk`. A publicação ocorre
+código e testes, aplica assinatura e gera `Meu Vercel-v1.5.0.apk`. A publicação ocorre
 diretamente em **GitHub Releases → Assets**, contendo **somente o APK**, sem ZIP de
 Artifacts. É um APK compilado pelo GitHub Actions, não por este arquivo ZIP de código.
 

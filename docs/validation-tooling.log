@@ -5,6 +5,6 @@ test_missing_secrets_identifies_test_signing (__main__.ToolingTests.test_missing
 test_partial_signing_rejected (__main__.ToolingTests.test_partial_signing_rejected) ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 0.217s
+Ran 5 tests in 3.906s
 
 OK
