@@ -22,4 +22,4 @@ assert len({item['versionCode'] for item in history}) == len(history), 'versionC
 assert len({item['versionName'] for item in history}) == len(history), 'versionName duplicado'
 assert [item['versionCode'] for item in history] == list(range(1, code + 1)), 'Histórico deve ser sequencial'
 assert history[-1] == {'versionName': name, 'versionCode': code}, 'Histórico desatualizado'
-print(f'Versões sincronizadas: {name}+{code} · {app_id} · Meu Vercel.-v{name}.apk')
+print(f'Versões sincronizadas: {name}+{code} · {app_id} · Meu Vercel-v{name}.apk')

@@ -14,15 +14,29 @@ class _LoginScreenState extends State<LoginScreen> with OperationState<LoginScre
   final _token = TextEditingController();
   bool _showToken = false;
   Future<void> _openVercel() async {
-    final uri = Uri.parse('https://vercel.com/dashboard');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o painel da Vercel.')));
+    try {
+      final uri = Uri.parse('https://vercel.com/dashboard');
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+        feedback(context, 'Não foi possível abrir o painel da Vercel.');
+      }
+    } catch (_) {
+      if (mounted) feedback(context, 'Não foi possível abrir o painel da Vercel.');
     }
   }
-  Future<void> _copyToken() async {
-    if (_token.text.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: _token.text));
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Token copiado. A área de transferência pode ser acessada por outros aplicativos.')));
+  Future<void> _pasteToken() async {
+    try {
+      final value = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+      if (!mounted) return;
+      if (value == null || value.trim().isEmpty) {
+        feedback(context, 'A área de transferência não contém texto para colar.');
+        return;
+      }
+      _token.value = TextEditingValue(
+        text: value.trim(), selection: TextSelection.collapsed(offset: value.trim().length));
+      feedback(context, 'Texto colado no campo do token.');
+    } catch (_) {
+      if (mounted) feedback(context, 'Não foi possível acessar a área de transferência.');
+    }
   }
   @override AppController get app => widget.app;
   @override void dispose() { _token.clear(); _token.dispose(); super.dispose(); }
@@ -44,15 +58,23 @@ class _LoginScreenState extends State<LoginScreen> with OperationState<LoginScre
                 IconButton(tooltip: _showToken ? 'Ocultar token' : 'Visualizar token',
                   icon: Icon(_showToken ? Icons.visibility_off_outlined : Icons.visibility_outlined),
                   onPressed: () => setState(() => _showToken = !_showToken)),
-                IconButton(tooltip: 'Copiar token', icon: const Icon(Icons.copy_outlined), onPressed: _copyToken),
+                IconButton(tooltip: 'Colar token', icon: const Icon(Icons.content_paste_outlined), onPressed: working ? null : _pasteToken),
               ])),
             onSubmitted: (_) { if (!working) _login(); }), const SizedBox(height: 12),
-          FilledButton(onPressed: working || app.busy ? null : _login,
-            child: working ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Validar e entrar')),
-          if (app.error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(app.error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-          const SizedBox(height: 14), OutlinedButton.icon(onPressed: _openVercel,
-            icon: const Icon(Icons.open_in_new), label: const Text('Abrir painel da Vercel')),
-          const SizedBox(height: 18), const Text('Crie um token em vercel.com/account/tokens. Ele será validado pela API oficial e protegido no Android.',
+          Row(children: [
+            Expanded(child: FilledButton(
+              onPressed: working || app.busy ? null : _login,
+              child: working
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Validar e entrar', maxLines: 1, overflow: TextOverflow.ellipsis))),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _openVercel, icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Painel Vercel', maxLines: 1, overflow: TextOverflow.ellipsis))),
+          ]),
+          if (app.error != null) Padding(padding: const EdgeInsets.only(top: 12),
+            child: Text(app.error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+          const SizedBox(height: 18), const Text('Crie um token em vercel.com/account/tokens. Use Colar para inseri-lo e o olho para conferir antes de validar. O token será protegido no Android.',
             style: TextStyle(fontSize: 12)),
         ]))))));
 }

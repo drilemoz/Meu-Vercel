@@ -1,3 +1,24 @@
+## Validação desta entrega — 1.2.0+4 (14/10/2026)
+
+**Executado localmente (código atual):**
+- `python3 scripts/check_version.py`: aprovado, versão 1.2.0+4 e pacote Android sincronizados.
+- `python3 scripts/check_structure.py`: aprovado, 27 arquivos Dart com delimitadores balanceados, JSON/XML/YAML e configuração do workflow para GitHub Releases sem Artifacts.
+- `python3 scripts/test_tooling.py`: 5 testes Python aprovados.
+- Acrescentados testes Flutter para colar/mostrar token, validação de nomes e PATCH de renomeação (testes presentes no projeto, mas execução pendente).
+
+**Não executado:** `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --release`, teste autenticado real com Vercel e teste em aparelho. Motivo: Flutter e Android SDK indisponíveis neste ambiente. A verificação de delimitadores não substitui compilação Dart.
+
+**Critério pendente de aprovação:** GitHub Actions precisa compilar, executar os testes e publicar o APK; a ação de renomear deve ser verificada usando um projeto de teste com permissões adequadas.
+
+---
+
+## Versão 1.2.0+4 (14/10/2026)
+- Login: substituído **Copiar** por **Colar**, usando o texto da área de transferência sem registrar o token; continua oculto por padrão, com botão de visualização.
+- Botões **Validar e entrar** e **Painel Vercel** agora estão lado a lado e levam, respectivamente, à validação do token e ao painel HTTPS oficial.
+- Projetos: mantidas criação e exclusão; adicionada ação **Renomear projeto** com validação de nome, confirmação de impacto em Production e PATCH por ID estável na API oficial.
+- Nenhuma ação de projeto é executada sem confirmação. O nome novo não deve conter `---`.
+- Verificações estruturais e de versão locais. Flutter Analyze/Test e APK Android ainda dependem de execução no CI.
+
 ## Versão 1.1.0+3 (14/10/2026)
 - Tela de login: acesso HTTPS ao painel da Vercel no navegador, botão copiar token e alternância entre texto oculto/visível.
 - Atenção: copiar um token sensível para a área de transferência permite acesso por outros aplicativos; use apenas quando necessário.

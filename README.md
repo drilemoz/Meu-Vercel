@@ -1,3 +1,10 @@
+## Versão 1.2.0+4 (14/10/2026)
+- Login: substituído **Copiar** por **Colar**, usando o texto da área de transferência sem registrar o token; continua oculto por padrão, com botão de visualização.
+- Botões **Validar e entrar** e **Painel Vercel** agora estão lado a lado e levam, respectivamente, à validação do token e ao painel HTTPS oficial.
+- Projetos: mantidas criação e exclusão; adicionada ação **Renomear projeto** com validação de nome, confirmação de impacto em Production e PATCH por ID estável na API oficial.
+- Nenhuma ação de projeto é executada sem confirmação. O nome novo não deve conter `---`.
+- Verificações estruturais e de versão locais. Flutter Analyze/Test e APK Android ainda dependem de execução no CI.
+
 ## Versão 1.1.0+3 (14/10/2026)
 - Tela de login: acesso HTTPS ao painel da Vercel no navegador, botão copiar token e alternância entre texto oculto/visível.
 - Atenção: copiar um token sensível para a área de transferência permite acesso por outros aplicativos; use apenas quando necessário.
@@ -6,7 +13,7 @@
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão atual **1.0.2**, versionCode **2**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.2.0**, versionCode **4**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -31,7 +38,7 @@ A correção precisa ser executada novamente no GitHub Actions para confirmar o 
 - Painel com conta, projetos carregados, favoritos, deploys recentes, falhas e última
   sincronização. Quando existem mais páginas, a quantidade mostra `+`; não é um total inventado.
 - Projetos com busca nos itens carregados, filtro por framework/favoritos, ordenação,
-  detalhes Git, comandos/diretórios configuráveis, criação e exclusão com nome digitado.
+  detalhes Git, comandos/diretórios configuráveis, criação, renomeação com confirmação e exclusão com nome digitado.
 - Deploys paginados, status, horário, commit, Preview/Production, URL HTTPS, até 200
   eventos recentes, cancelamento e novo deploy por redeploy oficial. Production exige confirmação.
 - Domínios: consulta paginada, verificação, dados DNS disponíveis, associação e remoção
@@ -75,22 +82,19 @@ O CI preserva o lock resolvido como Artifact para auditoria.
 ## APK e GitHub Actions
 
 O workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) roda em
-push para `main`, tags `v*` e execução manual. Configura SDKs, instala dependências,
-executa análise/testes, prepara assinatura e compila. O arquivo esperado é
-**Meu Vercel.-v1.0.2.apk**, acompanhado de `.sha256`, `SIGNATURE.txt` e `SIGNING.txt`.
+push para `main`, tags `v*` e execução manual. Instala Flutter/SDK Android, valida
+código e testes, aplica assinatura e gera `Meu Vercel-v1.2.0.apk`. A publicação ocorre
+diretamente em **GitHub Releases → Assets**, contendo **somente o APK**, sem ZIP de
+Artifacts. É um APK compilado pelo GitHub Actions, não por este arquivo ZIP de código.
 
-Secrets suportados: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
-Todos presentes: assinatura persistente. Todos ausentes: build de teste identificado.
-Configuração parcial: falha explícita na etapa de assinatura. O Artifact de APK é
-publicado **antes** do job de Releases, preservando o download se esse job falhar.
-Releases exigem chave estável e tag correspondente à versão; também podem ser
-solicitados manualmente com `publish_release`. Tags/Releases existentes não são
-sobrescritos automaticamente. Retenção de Artifacts: 30 dias.
+Secrets necessários para assinatura estável: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
+`KEY_ALIAS` e `KEY_PASSWORD`. Todos configurados: build assinado com chave persistente.
+Ausência total: assinatura de teste, identificada como pré-lançamento. Configuração
+parcial: falha explícita. Não inclua chaves ou `.env` reais no repositório nem no ZIP.
 
-Modelos sem credenciais em [secrets](secrets/). Use o mapa JSON ou TXT/ENV de pares
-nome/valor no GitHub Manager que aceite esses formatos. A compatibilidade com um
-módulo/versão específico do GitHub Manager precisa ser confirmada naquele app;
-nenhum schema proprietário foi presumido ou validado.
+**Limitação do fluxo:** um push repetido da mesma versão pode encontrar uma Release
+existente e o comando `gh release create` rejeitar a duplicação. Crie uma versão nova
+após cada alteração distribuída, de acordo com `AGENTS.md`.
 
 ## Restrições e segurança
 

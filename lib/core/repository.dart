@@ -1,5 +1,7 @@
 import 'api.dart';
 import 'models.dart';
+import 'project_names.dart';
+import 'errors.dart';
 
 class VercelRepository {
   VercelRepository(this.api, {this.team});
@@ -28,6 +30,13 @@ class VercelRepository {
   }
   Future<void> updateProject(String id, Json settings) async {
     await api.write('PATCH', projectPath(id), team: team, body: settings);
+  }
+  Future<void> renameProject(String id, String newName) async {
+    if (!validProjectName(newName)) {
+      throw const ApiFailure(FailureKind.invalid, 'Nome de projeto inválido.');
+    }
+    // Busca pelo ID estável mesmo quando o nome for alterado.
+    await api.write('PATCH', projectPath(id), team: team, body: {'name': newName});
   }
   Future<void> deleteProject(String id) async { await api.write('DELETE', projectPath(id), team: team); }
   Future<void> cancelDeployment(String id) async { await api.write('PATCH', '/v12/deployments/${VercelApi.segment(id)}/cancel', team: team); }

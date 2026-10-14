@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/controller.dart';
 import '../core/models.dart';
+import '../core/project_names.dart';
 import 'common.dart';
 import 'dashboard.dart';
 import 'deployments.dart';
@@ -22,7 +23,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> with OperationState<Pro
     final input = await fieldsDialog(context, 'Criar projeto', {'name': 'Nome do projeto', 'framework': 'Framework (opcional)'});
     if (!mounted || input == null) return;
     final name = input['name']!.trim();
-    if (!RegExp(r'^[a-z0-9][a-z0-9._-]{0,99}$').hasMatch(name)) { feedback(context, 'Use até 100 letras minúsculas, números, ponto, _ ou hífen.'); return; }
+    if (!validProjectName(name)) { feedback(context, 'Use 1 a 100 caracteres: letras minúsculas, números, ponto, _ ou hífen. Evite --- .'); return; }
     if (!await confirmAction(context, title: 'Criar projeto?', resource: name,
       description: 'Criar na conta ${app.activeName}. A API pode exigir permissões ou um plano específico.')) return;
     await run(() async { await app.repository.createProject(name, input['framework']!.trim().isEmpty ? null : input['framework']!.trim());
@@ -44,7 +45,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> with OperationState<Pro
             DropdownMenuItem(value: 'updated', child: Text('Recentes'))], onChanged: (v) => setState(() => sort = v!)),
           DropdownButton<String>(value: selectedFramework, items: [const DropdownMenuItem(value: 'all', child: Text('Todos os frameworks')),
             for (final f in frameworks) DropdownMenuItem(value: f, child: Text(f == 'none' ? 'Não informado' : f))], onChanged: (v) => setState(() => framework = v!)),
-          IconButton(tooltip: 'Criar projeto', onPressed: working ? null : _create, icon: const Icon(Icons.add))])),
+          FilledButton.tonalIcon(onPressed: working || app.busy ? null : _create,
+            icon: const Icon(Icons.add), label: const Text('Criar projeto'))])),
       if (working) const LinearProgressIndicator(),
       Expanded(child: RefreshIndicator(onRefresh: () => app.sync(force: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(),
         children: [if (projects.isEmpty) const EmptyView('Nenhum projeto encontrado.'), for (final p in projects) ProjectTile(app, p),
@@ -68,6 +70,28 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
     final loaded = await app.repository.project(project.id);
     if (mounted) setState(() { project = loaded; current = true; });
   });
+  Future<void> _rename() async {
+    final input = await fieldsDialog(context, 'Renomear projeto',
+      const {'name': 'Novo nome do projeto'}, initial: {'name': project.name});
+    if (!mounted || input == null) return;
+    final newName = input['name']!.trim();
+    if (!validProjectName(newName)) {
+      feedback(context, 'Nome inválido: use 1 a 100 caracteres minúsculos, números, ponto, _ ou hífen, sem --- .');
+      return;
+    }
+    if (newName == project.name) return;
+    final oldName = project.name;
+    if (!await confirmAction(context, title: 'Renomear projeto?', resource: oldName,
+      production: true,
+      description: 'Alterar o nome de "$oldName" para "$newName" na conta ${app.activeName}. '
+        'Links e configurações associados ao nome podem ser afetados.')) return;
+    await run(() async {
+      await app.repository.renameProject(project.id, newName);
+      final updated = await app.repository.project(project.id);
+      if (mounted) setState(() { project = updated; current = true; });
+      await app.sync(force: true);
+    }, success: 'Projeto renomeado.');
+  }
   Future<void> _edit() async {
     final input = await fieldsDialog(context, 'Configurações de ${project.name}', const {
       'buildCommand': 'Comando de build', 'installCommand': 'Comando de instalação',
@@ -90,6 +114,8 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
     body: ListView(children: [if (working) const LinearProgressIndicator(), if (!current) const ListTile(dense: true,
       leading: Icon(Icons.history), title: Text('Dados previamente sincronizados; consulta online pendente.')),
       InfoLine('Framework', project.framework), InfoLine('Repositório Git', project.repository),
+      ListTile(leading: const Icon(Icons.drive_file_rename_outline), title: const Text('Renomear projeto'),
+        subtitle: const Text('Alterar o nome na Vercel'), onTap: working || app.busy ? null : _rename),
       ListTile(leading: const Icon(Icons.rocket_launch_outlined), title: const Text('Histórico de deploys'), trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => ProjectDeploymentsScreen(app, project)))),
       ListTile(leading: const Icon(Icons.language), title: const Text('Domínios'), trailing: const Icon(Icons.chevron_right),

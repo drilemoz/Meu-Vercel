@@ -60,7 +60,7 @@ for file in (ROOT / 'android').rglob('*.xml'): ET.parse(file)
 workflow = yaml.load((ROOT / '.github/workflows/build-apk.yml').read_text(), Loader=yaml.BaseLoader)
 assert workflow['on']['push']['branches'] == ['main']
 assert 'workflow_dispatch' in workflow['on']
-assert workflow['jobs']['release']['needs'] == 'build'
+assert 'release' not in workflow['jobs'], 'O fluxo atual publica a Release diretamente no job build'
 build = workflow['jobs']['build']['steps']
 sdk_setup = next(s for s in build if s.get('uses', '').startswith('android-actions/setup-android@'))
 packages = sdk_setup.get('with', {}).get('packages', '').split()
@@ -69,8 +69,9 @@ assert 'tools' not in packages, 'O pacote legado tools não deve ser instalado'
 assert 'platform-tools' in packages, 'platform-tools necessário no runner Android'
 assert any(s.get('run') == 'flutter analyze' for s in build)
 assert any(s.get('run') == 'flutter test --coverage' for s in build)
-assert any(s.get('uses') == 'actions/upload-artifact@v4' and s.get('with', {}).get('path') == 'artifacts/' for s in build)
-assert workflow['jobs']['release']['permissions']['contents'] == 'write'
+assert not any(s.get('uses', '').startswith('actions/upload-artifact@') for s in build), 'Não publicar Artifacts ZIP'
+assert any('gh release create' in s.get('run', '') and 'dist/$APK_NAME' in s.get('run', '') for s in build), 'Publicar APK na Release'
+assert workflow['permissions']['contents'] == 'write'
 manifest = ET.parse(ROOT / 'android/app/src/main/AndroidManifest.xml').getroot()
 app = manifest.find('application')
 namespace = '{http://schemas.android.com/apk/res/android}'

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meu_vercel/core/controller.dart';
 import 'package:meu_vercel/core/storage.dart';
@@ -18,7 +19,31 @@ void main() {
     final app = AppController(local: LocalData(MemoryStore()), tokens: MemoryTokens(), alerts: NoAlerts());
     await app.initialize(); await tester.pumpWidget(MeuVercelApp(app));
     expect(find.text('Validar e entrar'), findsOneWidget);
+    expect(find.text('Painel Vercel'), findsOneWidget);
+    expect(find.byTooltip('Colar token'), findsOneWidget);
+    expect(find.byTooltip('Copiar token'), findsNothing);
+    expect(find.byTooltip('Visualizar token'), findsOneWidget);
     final field = tester.widget<TextField>(find.byType(TextField)); expect(field.obscureText, true);
+    await tester.pumpWidget(const SizedBox()); app.dispose();
+  });
+  testWidgets('colar substitui o conteúdo do token sem deixá-lo visível', (tester) async {
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData') return {'text': '  TEST_ONLY_TOKEN_PLACEHOLDER  '};
+      return null;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final app = AppController(local: LocalData(MemoryStore()), tokens: MemoryTokens(), alerts: NoAlerts());
+    await app.initialize();
+    await tester.pumpWidget(MeuVercelApp(app));
+    await tester.tap(find.byTooltip('Colar token'));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller!.text, 'TEST_ONLY_TOKEN_PLACEHOLDER');
+    expect(field.obscureText, true);
+    await tester.tap(find.byTooltip('Visualizar token'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).obscureText, false);
     await tester.pumpWidget(const SizedBox()); app.dispose();
   });
   testWidgets('navegação principal permite ver cache, projetos, deploys e ajustes', (tester) async {

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meu_vercel/core/errors.dart';
 import 'package:meu_vercel/core/repository.dart';
+import 'package:meu_vercel/core/project_names.dart';
 import 'support.dart';
 
 void main() {
@@ -66,6 +67,27 @@ void main() {
     await repo.redeploy('dpl_fixture', 'projeto', 'production');
     expect((adapter.requests[0].data as Map).containsKey('target'), false);
     expect((adapter.requests[1].data as Map)['target'], 'production');
+  });
+  test('renomear usa PATCH com ID estável, nome e escopo corretos', () async {
+    final adapter = FakeAdapter((_) async => response({}));
+    final api = fakeApi(adapter); addTearDown(api.close);
+    await VercelRepository(api, team: 'team_fixture').renameProject('prj_fixture', 'novo-projeto');
+    final request = adapter.requests.single;
+    expect(request.method, 'PATCH');
+    expect(request.uri.path, '/v9/projects/prj_fixture');
+    expect(request.queryParameters['teamId'], 'team_fixture');
+    expect(request.data, {'name': 'novo-projeto'});
+  });
+  test('nome inválido nunca envia requisição de renomeação', () async {
+    final adapter = FakeAdapter((_) async => response({}));
+    final api = fakeApi(adapter); addTearDown(api.close);
+    final repository = VercelRepository(api);
+    for (final name in ['', 'LetraMaiuscula', 'nome---errado', 'dois espaços', 'a' * 101]) {
+      expect(validProjectName(name), false);
+      await expectLater(repository.renameProject('prj_fixture', name), throwsA(isA<ApiFailure>()));
+    }
+    expect(validProjectName('novo-projeto_01.vercel'), true);
+    expect(adapter.requests, isEmpty);
   });
   test('variáveis nunca pedem descriptografia', () async {
     final adapter = FakeAdapter((_) async => response({'envs': [{'id': 'env_fixture', 'key': 'CHAVE', 'target': ['preview'], 'value': 'IGNORED_SECRET'}]}));
