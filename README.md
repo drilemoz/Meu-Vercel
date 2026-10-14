@@ -1,7 +1,7 @@
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão inicial **1.0.1**, versionCode **1**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.0.2**, versionCode **2**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -9,6 +9,15 @@ Flutter/Dart e Android SDK não estão instalados no ambiente de entrega; a rede
 proxy impediu baixá-los. Não há APK compilado ou teste Flutter aprovado nesta entrega.
 Veja os resultados efetivamente executados e os bloqueios em [VALIDATION](docs/VALIDATION.md).
 A versão só deve ser distribuída após o CI e a validação em aparelho passarem.
+
+## Correção 1.0.2
+
+Os logs da execução anterior mostram `sdkmanager tools` seguido de
+`Failed to find package 'tools'`. O workflow agora configura explicitamente
+`packages: platform-tools` em android-actions/setup-android@v3, evitando o default
+legado `tools platform-tools`. Plataforma 36, Build Tools 36.0.0 e NDK permanecem
+na etapa seguinte. Identidade Android, assinatura e funcionalidades são preservadas.
+A correção precisa ser executada novamente no GitHub Actions para confirmar o build.
 
 ## Recursos no código
 
@@ -63,7 +72,7 @@ O CI preserva o lock resolvido como Artifact para auditoria.
 O workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) roda em
 push para `main`, tags `v*` e execução manual. Configura SDKs, instala dependências,
 executa análise/testes, prepara assinatura e compila. O arquivo esperado é
-**Meu Vercel.-v1.0.1.apk**, acompanhado de `.sha256`, `SIGNATURE.txt` e `SIGNING.txt`.
+**Meu Vercel.-v1.0.2.apk**, acompanhado de `.sha256`, `SIGNATURE.txt` e `SIGNING.txt`.
 
 Secrets suportados: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
 Todos presentes: assinatura persistente. Todos ausentes: build de teste identificado.

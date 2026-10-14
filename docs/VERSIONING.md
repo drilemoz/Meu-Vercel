@@ -1,10 +1,11 @@
 # Versionamento
 
-Estado inicial: **1.0.1+1**, Android versionName **1.0.1**, versionCode **1**.
-Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel.-v1.0.1.apk`.
+Estado atual: **1.0.2+2**, Android versionName **1.0.2**, versionCode **2**.
+Primeira entrega: 1.0.1+1. A 1.0.2 corrige a instalação SDK no workflow.
+Pacote permanente: `app.meuvercel.android`. APK: `Meu Vercel.-v1.0.2.apk`.
 
 Cada versão entregue/publicada depois desta aumenta o versionCode para o próximo
-inteiro não usado. Exemplo: correção 1.0.2+2, função compatível 1.1.0+3. SemVer:
+inteiro não usado. Exemplo seguinte: correção 1.0.3+3, função compatível 1.1.0+4. SemVer:
 patch para correções, minor para recursos compatíveis, major para incompatibilidades.
 Alterações ainda dentro de uma versão inicial não distribuída não criam versões
 artificiais. Depois da entrega, correções seguem a regra de incremento.

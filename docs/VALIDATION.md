@@ -1,16 +1,31 @@
-# Validação real — Meu Vercel 1.0.1+1
+# Validação real — Meu Vercel 1.0.2+2
 
 Data da entrega: 2026-10-14 (UTC). Nenhum token real ou chave de assinatura foi usado.
 Este relatório separa verificações de ferramentas, análise/compilação Flutter e
 validação com a API real. **Não há evidência de build Android aprovado.**
+
+## Falha identificada nos logs enviados
+
+Execução da versão 1.0.1 no repositório `drilemoz/Meu-Vercel`, commit
+`06d0d0233b2f9efc887a654fc331e2b27ed1c288`, em 2026-10-14. A etapa
+“Configurar Android SDK” executou `sdkmanager tools`, encontrou
+`Warning: Failed to find package 'tools'` e terminou com exit code 1.
+Flutter, análise, testes e compilação não chegaram a executar nesse run.
+
+O workflow real daquele commit foi conferido via conector GitHub e corresponde
+ao código local. Também foi lido o [action.yml de setup-android@v3](https://github.com/android-actions/setup-android/blob/v3/action.yml):
+o default de packages é `tools platform-tools`. A 1.0.2 substitui esse default
+por `packages: platform-tools`, mantendo a instalação explícita dos outros SDKs.
+A checagem de estrutura exige pacotes explícitos e rejeita `tools`.
 
 ## Aprovado por execução
 
 | Verificação | Resultado real |
 | --- | --- |
 | `python3 scripts/test_tooling.py` | 5 testes aprovados: ausência de Secrets identifica teste; Secrets parciais falham; Base64 inválido não vaza conteúdo; escape Java Properties/permissões; checksum e identificação de APK de teste |
-| `python3 scripts/check_version.py` | 1.0.1+1 sincronizado em Flutter, Android, metadados, documentação e histórico; pacote permanente conferido |
+| `python3 scripts/check_version.py` | 1.0.2+2 sincronizado em Flutter, Android, metadados, documentação e histórico; pacote permanente conferido |
 | `python3 scripts/check_structure.py` | Delimitadores balanceados em 26 arquivos Dart; JSON/XML/workflow legíveis, gatilhos/Artifacts e regras Android conferidos |
+| Regressão SDK em duas cópias temporárias | Default sem packages e configuração com tools foram rejeitados pela checagem; saída em validation-sdk-regression.log |
 | `bash -n android/gradlew` | Sintaxe shell aceita |
 
 A checagem de estrutura **não é** flutter analyze, compilação, prova de contratos
@@ -32,7 +47,7 @@ com teste de leitura e checksum, sem incluir o ZIP dentro de si mesmo.
 | `flutter test --coverage` | Sem SDK; testes Flutter/Dart foram escritos, mas não executados |
 | `flutter build apk --release` | Sem Flutter/Android SDK e sem chave privada configurada |
 | Assinatura e `apksigner verify` em APK real | Nenhum APK foi compilado |
-| Execução GitHub Actions e GitHub Releases | Nenhum repositório de destino foi informado/publicado; workflow entregue em código |
+| Nova execução GitHub Actions / Releases da 1.0.2 | Não disparada/publicada. Os logs recebidos comprovam falha da 1.0.1 antes de Flutter; o novo workflow aguarda execução |
 | Testes reais da API Vercel | Sem token real, e consulta online/SDK bloqueados pelo proxy |
 | Smoke test em aparelho Android | Sem aparelho/emulador disponível |
 | Importação no módulo específico do GitHub Manager | App/schema do importador não disponibilizado |
@@ -40,7 +55,9 @@ com teste de leitura e checksum, sem incluir o ZIP dentro de si mesmo.
 
 Tentativas de rede: clone do Flutter em github.com e consulta a storage.googleapis.com
 falharam com `Failed to connect to proxy port 8080 ... Could not connect to server`.
-O endpoint de documentação openapi.vercel.sh também não foi alcançado. Não foi
+O endpoint de documentação openapi.vercel.sh também não foi alcançado na entrega inicial.
+Nesta correção, arquivos GitHub puderam ser lidos via conector; o proxy shell continua
+inacessível e os SDKs continuam ausentes. Não foi
 contornado o proxy nem solicitada credencial privada para fabricar resultados.
 A retomada do ambiente não resolveu essa falha. Google Drive usa o conector conectado,
 independente da rede shell, e a confirmação de upload é registrada na resposta final.
@@ -78,5 +95,5 @@ independente da rede shell, e a confirmação de upload é registrada na respost
 Limites intencionais da 1.0.1: busca/filtros globais sobre itens carregados; contador
 com `+` enquanto houver páginas; logs limitados a 200 eventos recentes; cache somente
 nos módulos documentados; sem monitoramento permanente, editor DNS, upload de fontes
-ou suporte a Custom Environments. Nenhum recurso existente de uma versão anterior
-foi removido: esta é a primeira entrega de código.
+ou suporte a Custom Environments. Nenhum recurso da 1.0.1 foi removido; a 1.0.2 altera somente o workflow, a
+verificação estrutural, os metadados, novidades e documentação.

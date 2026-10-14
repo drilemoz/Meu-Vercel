@@ -62,6 +62,11 @@ assert workflow['on']['push']['branches'] == ['main']
 assert 'workflow_dispatch' in workflow['on']
 assert workflow['jobs']['release']['needs'] == 'build'
 build = workflow['jobs']['build']['steps']
+sdk_setup = next(s for s in build if s.get('uses', '').startswith('android-actions/setup-android@'))
+packages = sdk_setup.get('with', {}).get('packages', '').split()
+assert packages, 'Defina os pacotes SDK explicitamente para evitar defaults descontinuados'
+assert 'tools' not in packages, 'O pacote legado tools não deve ser instalado'
+assert 'platform-tools' in packages, 'platform-tools necessário no runner Android'
 assert any(s.get('run') == 'flutter analyze' for s in build)
 assert any(s.get('run') == 'flutter test --coverage' for s in build)
 assert any(s.get('uses') == 'actions/upload-artifact@v4' and s.get('with', {}).get('path') == 'artifacts/' for s in build)

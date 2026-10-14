@@ -1,12 +1,12 @@
-UTC: 2026-10-14T11:06:35.477361+00:00
+UTC: 2026-10-14T11:26:47.088316+00:00
 flutter: não instalado
 dart: não instalado
 sdkmanager: não instalado
 java: /usr/bin/java
-Tentativa HTTPS Flutter: exit 7
+HTTPS Flutter: exit 7
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (7) Failed to connect to proxy port 8080 after 1 ms: Could not connect to server
+curl: (7) Failed to connect to proxy port 8080 after 0 ms: Could not connect to server

@@ -1,19 +1,18 @@
-# Meu Vercel 1.0.1
+# Meu Vercel 1.0.2
 
-Versão inicial com interface em português para consultar e administrar projetos e
-deploys pela API oficial da Vercel. Token protegido no Android, conta pessoal/equipes,
-favoritos, cache offline, domínios, variáveis, backup sem credenciais e temas claro,
-AMOLED e sistema. Alertas opcionais quando o aplicativo sincroniza.
+Corrige a etapa “Configurar Android SDK” do GitHub Actions, que tentava instalar o
+pacote descontinuado `tools` e encerrava com `Failed to find package 'tools'`.
+A action agora recebe `packages: platform-tools` explicitamente; plataforma,
+Build Tools e NDK continuam na etapa seguinte.
 
-Pacote: `app.meuvercel.android`. versionCode: `1`.
-APK esperado no CI: `Meu Vercel.-v1.0.1.apk` e checksum SHA-256.
+Pacote preservado: `app.meuvercel.android`. versionCode: `2`.
+APK esperado: `Meu Vercel.-v1.0.2.apk`, acompanhado de checksum SHA-256.
+A identidade de assinatura e todos os recursos da 1.0.1 foram preservados.
 
-Produção e exclusões exigem confirmação. Ações dependem do plano, escopo do token e
-permissões Vercel. O GitHub tem somente contrato de integração futura.
+Verificações locais: cinco testes dos scripts aprovados, metadados de versão e
+estrutura de workflow/JSON/XML conferidos. Flutter analyze, testes Flutter e build
+Android não executados: SDKs ausentes e proxy shell inacessível. A nova execução no
+GitHub Actions é necessária para confirmar o resultado; não há APK aprovado.
 
-**Situação da entrega do código:** Flutter analyze, testes Flutter e build Android
-não executados por falta de SDK e proxy inacessível. A publicação deve aguardar
-CI e validação em aparelho aprovados; não há APK previamente aprovado.
-
-Somente APK com chave persistente é elegível para Releases. Builds sem Secrets são
-identificados como teste nos Artifacts e não garantem atualização entre builds.
+Releases continuam exigindo assinatura persistente. Sem os quatro Secrets,
+o workflow gera somente APK identificado como teste nos Artifacts.
