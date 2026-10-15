@@ -45,6 +45,7 @@ class VercelApi {
       }
       final status = e.response?.statusCode;
       if (status == 401) throw const ApiFailure(FailureKind.authentication, 'Token expirado ou inválido. Substitua o token.');
+      if (status == 402) throw const ApiFailure(FailureKind.forbidden, 'O plano ou faturamento da Vercel não permite esta operação.');
       if (status == 403) throw const ApiFailure(FailureKind.forbidden, 'A conta ou o token não tem permissão para esta ação.');
       if (status == 404) throw const ApiFailure(FailureKind.missing, 'Recurso não encontrado ou indisponível para esta conta.');
       if (status == 429) {

@@ -1,3 +1,39 @@
+## 1.6.0+11 — controle de promoção e rollback (14/10/2026)
+
+**Escopo:** promoção de Preview READY mediante novo deployment Production, promoção de build Production READY sem rebuild e rollback de deployment Production anterior. `projectId`, ambiente e estado são relidos online antes do POST; confirmação digitada com nome do projeto. Token/Secrets não são transmitidos fora da API Vercel nem gravados no pacote.
+
+**APIs verificadas na documentação oficial:**
+- `POST /v13/deployments` com `deploymentId`, `project`, `name` e `target: production`: cria novo deployment a partir da origem; configurações/variáveis podem ser herdadas.
+- `POST /v10/projects/{projectId}/promote/{deploymentId}`: promove sem rebuild, usado para deployment Production já pronto.
+- `POST /v1/projects/{projectId}/rollback/{deploymentId}`: restaura deployment Production anterior, sujeito às limitações do plano.
+
+**Executado localmente:** `python3 scripts/check_version.py` aprovado; `python3 scripts/check_structure.py` aprovado (checagem lexical, não compilação); `python3 scripts/test_tooling.py` com 5 testes aprovados; ZIP verificado com leitura/CRC e SHA-256 na entrega.
+
+**Testes Flutter adicionados, mas não executados:** modelo com `projectId` no cache, segurança por projeto/estado/ambiente, contrato das três rotas e escopo da equipe, bloqueio de rollback do mais recente, botão visível só para READY e cancelamento de confirmação sem POST. São testes com dublês HTTP, não testes da Vercel real.
+
+**Pendente:** Flutter Analyze e Flutter Test no GitHub Actions, compilação/assinatura APK, testes em aparelho e chamadas autenticadas com projeto descartável. Nenhuma publicação ou rollback real foi executado. O GitHub Releases permanece configurado para publicar apenas `Meu Vercel-v1.6.0.apk`.
+
+# Ajuste de teclado — 1.5.3+10 (14/10/2026)
+
+## Alterações
+- Em `lib/features/common.dart`, habilitadas sugestões para os campos que não contêm segredos. Autocorreção habilitada para texto comum e nome de projeto; desabilitada em nomes técnicos/URLs/comandos e na confirmação literal.
+- Em `lib/features/projects.dart`, ativadas sugestões e autocorreção na busca por projetos.
+- `lib/features/login.dart` continua com token oculto, sem sugestões nem autocorreção.
+- Ampliados testes de widgets para campos comuns, técnicos, secretos, busca e login. Estes testes não foram executados localmente.
+- Documentado plano de funcionalidades em `docs/ROADMAP.md` sem declarar recursos futuros como presentes.
+
+## Verificações desta versão
+- `python3 scripts/check_version.py`: **aprovado** (v1.5.3+10, identidade e APK coerentes).
+- `python3 scripts/check_structure.py`: **aprovado** (35 arquivos Dart estruturalmente válidos, JSON/XML/workflow legíveis; não compila Dart).
+- `python3 scripts/test_tooling.py`: **5/5 aprovados**.
+- `bash -n android/gradlew`: **aprovado**.
+- Verificações estáticas dirigidas: login mantém token protegido, nomes e buscas ativam sugestões; controle de confirmação literal permanece.
+- `flutter analyze`, `flutter test`, `flutter build apk --release`: **não executados neste ambiente**, Flutter/Dart/Android SDK não disponíveis; validar no CI.
+- Teste de funcionamento real do teclado SwiftKey em Android: **pendente**. O app solicita sugestões, mas sua exibição depende das configurações e da versão do teclado.
+- Assinatura, atualização do APK e publicação GitHub Releases: **pendentes de build em CI**.
+
+---
+
 # Correção do workflow #8 — 1.5.2+9 (14/10/2026)
 
 ## Evidência dos logs enviados

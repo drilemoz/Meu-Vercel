@@ -1,3 +1,21 @@
+## Novidade 1.6.0: controle de produção
+
+Na tela de um deploy com status READY confirmado online, o app oferece:
+- **Promover Preview para Production:** solicitar um novo deploy Production usando um Preview como origem. A Vercel cria um novo build; configurações e variáveis podem ser herdadas do deploy de origem, exigindo revisão cuidadosa antes do envio. Acompanhe o resultado até READY.
+- **Promover build Production:** tentar atribuir os domínios públicos a um build Production pronto (sem recompilar).
+- **Rollback:** apontar produção para um deploy Production anterior elegível, com as restrições do plano da Vercel (no Hobby, só o anterior imediato).
+
+Ações em produção exigem confirmação digitando o nome do projeto, IDs de projeto validados na API e status READY. O app não efetua rollback automático, não garante êxito só pelo HTTP 201/202 e não lê credenciais de volta da API.
+
+API verificada: `POST /v13/deployments` (novo deploy a partir do ID), `POST /v10/projects/{projectId}/promote/{deploymentId}`, `POST /v1/projects/{projectId}/rollback/{deploymentId}`. O endpoint `/promote` **não recompila**, e é reservado na interface para builds Production. A compatibilidade do redeploy Preview para Production ainda exige teste em uma conta Vercel real.
+
+## Ajuste 1.6.0+11: digitação e sugestões do teclado (14/10/2026)
+
+- Autocorreção e sugestões reativadas para nomes de projetos e busca; formulários de texto comum também permitem sugestões do teclado (SwiftKey, Gboard etc.).
+- Identificadores técnicos (domínios, comandos, repositórios e nomes de variáveis) mostram sugestões sem troca automática; credenciais e valores secretos não recebem sugestões nem autocorreção.
+- Confirmação destrutiva mantém comparação literal do nome para proteger Production. A barra de sugestões depende também das configurações do teclado Android.
+- Roadmap priorizado em `docs/ROADMAP.md`. Testes de widgets adicionados, mas execução Flutter/Android ainda pendente no CI.
+
 ## Novidades 1.4.0+6: publicar sem GitHub
 
 Abra **Projetos → seu projeto estático** e escolha uma das entradas: **Selecionar pasta do site**, **Selecionar arquivos** (todos da raiz) ou **Selecionar ZIP**. Selecione **Preview** (padrão) ou **Produção**; a produção só prossegue depois de digitar o nome exato do projeto na confirmação adicional.
@@ -25,7 +43,7 @@ Nos detalhes de um projeto **estático sem Git e sem framework**, toque em **Pub
 # Meu Vercel
 
 Gerenciador Android em Flutter/Dart com interface pt-BR e chamadas HTTPS à API oficial
-`https://api.vercel.com`. Versão atual **1.5.2**, versionCode **9**, pacote permanente
+`https://api.vercel.com`. Versão atual **1.5.3**, versionCode **10**, pacote permanente
 **app.meuvercel.android**. Projeto independente, sem vínculo oficial com a Vercel.
 
 **Estado desta entrega:** código-fonte implementado, workflow e testes incluídos.
@@ -119,7 +137,7 @@ O workflow não publica ZIP de Artifacts; mantenha pubspec.lock versionado quand
 
 O workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) roda em
 push para `main`, tags `v*` e execução manual. Instala Flutter/SDK Android, valida
-código e testes, aplica assinatura e gera `Meu Vercel-v1.5.2.apk`. A publicação ocorre
+código e testes, aplica assinatura e gera `Meu Vercel-v1.6.0.apk`. A publicação ocorre
 diretamente em **GitHub Releases → Assets**, contendo **somente o APK**, sem ZIP de
 Artifacts. É um APK compilado pelo GitHub Actions, não por este arquivo ZIP de código.
 

@@ -71,12 +71,13 @@ class Project {
 }
 class Deployment {
   const Deployment({required this.id, required this.name, required this.status,
-    required this.environment, this.url, this.createdAt, this.commit, this.commitMessage, this.branch});
+    required this.environment, this.url, this.createdAt, this.commit, this.commitMessage, this.branch, this.projectId});
   final String id;
   final String name;
   final String status;
   final String environment;
   final String? url;
+  final String? projectId;
   final DateTime? createdAt;
   final String? commit;
   final String? commitMessage;
@@ -89,13 +90,14 @@ class Deployment {
     return Deployment(id: optionalString(j['uid']) ?? requiredString(j, 'id'),
       name: requiredString(j, 'name'), status: optionalString(j['readyState']) ?? optionalString(j['state']) ?? 'UNKNOWN',
       environment: optionalString(j['target']) ?? 'preview', url: optionalString(j['url']),
+      projectId: optionalString(j['projectId']),
       createdAt: date(j['createdAt'] ?? j['created']),
       commit: optionalString(j['commit']) ?? optionalString(meta['githubCommitSha']) ?? optionalString(meta['gitlabCommitSha']) ?? optionalString(meta['bitbucketCommitSha']),
       commitMessage: optionalString(j['commitMessage']) ?? optionalString(meta['githubCommitMessage']) ?? optionalString(meta['gitlabCommitMessage']),
       branch: optionalString(j['branch']) ?? optionalString(meta['githubCommitRef']) ?? optionalString(meta['gitlabCommitRef']));
   }
   Json toJson() => {'id': id, 'name': name, 'readyState': status, 'target': environment,
-    'url': url, 'createdAt': createdAt?.toIso8601String(), 'commit': commit,
+    'url': url, 'projectId': projectId, 'createdAt': createdAt?.toIso8601String(), 'commit': commit,
     'commitMessage': commitMessage, 'branch': branch};
 }
 class ProjectDomain {

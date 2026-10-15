@@ -63,6 +63,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> with OperationState<Pro
     projects.sort((a, b) => sort == 'name' ? a.name.compareTo(b.name)
       : (b.updatedAt?.millisecondsSinceEpoch ?? 0).compareTo(a.updatedAt?.millisecondsSinceEpoch ?? 0));
     return Column(children: [Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), child: TextField(
+      autocorrect: true, enableSuggestions: true,
+      textCapitalization: TextCapitalization.none,
       decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Buscar nos projetos carregados', border: OutlineInputBorder(), isDense: true),
       onChanged: (value) => setState(() => query = value))),
       Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center,
@@ -274,7 +276,7 @@ class _ProjectScreenState extends State<ProjectScreen> with OperationState<Proje
       feedback(context, 'Deploy aceito pela Vercel. Acompanhe o status antes de compartilhar.');
       unawaited(app.sync(force: true)); // Refresh lists without delaying status tracking.
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DeploymentScreen(
-        app, Deployment(id: id, name: project.name, status: 'QUEUED', environment: target),
+        app, Deployment(id: id, name: project.name, status: 'QUEUED', environment: target, projectId: project.id),
         trackOnOpen: true)));
     } finally {
       if (mounted) setState(() { uploaded = 0; uploadTotal = 0; });

@@ -4,6 +4,7 @@ import 'project_names.dart';
 import 'errors.dart';
 import 'github_projects.dart';
 import 'static_deploy.dart';
+import 'production_actions.dart';
 
 class VercelRepository {
   VercelRepository(this.api, {this.team});
@@ -95,6 +96,48 @@ class VercelRepository {
     await api.write('POST', '/v13/deployments', team: team,
       body: {'deploymentId': id, 'name': name, if (target == 'production') 'target': 'production'});
   }
+  /// Preview -> Production cria um NOVO deploy em Production usando a fonte
+  /// existente, sujeita a build/variáveis do ambiente e limites da conta.
+  /// A aceitação pela API não garante READY nem domínio atualizado.
+  Future<String> promotePreview(String projectId, String deploymentId) async {
+    final source = await deployment(deploymentId);
+    ProductionActions.requireDeployment(source, projectId, preview: true);
+    final result = object(await api.write('POST', '/v13/deployments', team: team,
+      body: {'deploymentId': source.id, 'name': source.name,
+        'project': projectId, 'target': 'production'}));
+    return requiredString(result, 'id');
+  }
+
+  /// Promove um build Production já pronto/estagiado, SEM refazer build.
+  Future<void> promoteProduction(String projectId, String deploymentId) async {
+    final source = await deployment(deploymentId);
+    ProductionActions.requireDeployment(source, projectId, preview: false);
+    await api.write('POST', '/v10/projects/${VercelApi.segment(projectId)}/promote/${VercelApi.segment(source.id)}', team: team);
+  }
+
+  /// Rollback restaura um deploy Production anterior, sem reconstruir código.
+  /// Elegibilidade (inclusive limites do plano Hobby) cabe à Vercel.
+  Future<void> rollbackProduction(String projectId, String deploymentId) async {
+    final source = await deployment(deploymentId);
+    ProductionActions.requireDeployment(source, projectId, preview: false);
+    final page = await deployments(projectId: projectId, target: 'production');
+    // Lista ordenada por criação, usada apenas para evitar rollback do próprio
+    // deploy mais recente. Não garante identificar um rollback ativo via alias.
+    if (page.items.isEmpty) {
+      throw const ApiFailure(FailureKind.invalid,
+        'Não foi possível conferir os deploys de produção do projeto.');
+    }
+    final recent = page.items.first;
+    if (recent.projectId != null && recent.projectId != projectId) {
+      throw const ApiFailure(FailureKind.invalid, 'A Vercel retornou deploys de outro projeto.');
+    }
+    if (recent.id == source.id) {
+      throw const ApiFailure(FailureKind.invalid,
+        'Este é o deploy mais recente. Se já ocorreu um rollback, confira o status no painel da Vercel.');
+    }
+    await api.write('POST', '/v1/projects/${VercelApi.segment(projectId)}/rollback/${VercelApi.segment(source.id)}', team: team);
+  }
+
   Future<Page<ProjectDomain>> domains(String id, {String? cursor}) async => Page.decode(
     await api.get('/v9/projects/${VercelApi.segment(id)}/domains', team: team,
       query: {'limit': 50, if (cursor != null) 'until': cursor}), 'domains', ProjectDomain.fromJson);

@@ -82,7 +82,7 @@ class _ConfirmActionDialogState extends State<_ConfirmActionDialog> {
           Text('Esta ação pode alterar Production e afetar usuários.',
             style: TextStyle(color: Theme.of(context).colorScheme.error))],
         if (widget.destructive) ...[const SizedBox(height: 16),
-          TextField(controller: controller, autocorrect: false,
+          TextField(controller: controller, autocorrect: false, enableSuggestions: true,
             decoration: InputDecoration(labelText: 'Digite ${widget.resource} para confirmar'),
             onChanged: (_) => setState(() {}))],
       ])),
@@ -158,7 +158,14 @@ class _FieldsDialogState extends State<_FieldsDialog> {
           Padding(padding: const EdgeInsets.only(bottom: 12),
             child: TextField(controller: controllers[entry.key],
               obscureText: widget.secret.contains(entry.key),
-              autocorrect: false, enableSuggestions: false,
+              // Sugestões do teclado nos campos comuns. Identificadores técnicos
+              // podem receber sugestões, mas nunca correção automática.
+              autocorrect: !widget.secret.contains(entry.key) &&
+                !const {'repo', 'domain', 'branch', 'key', 'framework',
+                  'buildCommand', 'installCommand', 'outputDirectory',
+                  'rootDirectory'}.contains(entry.key),
+              enableSuggestions: !widget.secret.contains(entry.key),
+              textCapitalization: TextCapitalization.none,
               maxLength: widget.secret.contains(entry.key) ? 65536 : 2048,
               decoration: InputDecoration(labelText: entry.value, counterText: ''))),
       ]))),

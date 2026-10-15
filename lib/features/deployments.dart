@@ -190,6 +190,67 @@ class _DeploymentScreenState extends State<DeploymentScreen>
       description: 'Refazer este deploy em ${target == 'production' ? 'Production' : 'Preview'} usando o mecanismo oficial da Vercel.')) return;
     await run(() async { await app.repository.redeploy(deployment.id, deployment.name, target); await app.sync(force: true); }, success: 'Novo deploy solicitado.');
   }
+  /// Alterações de Production sempre exigem leitura online, vínculo por ID
+  /// e confirmação digitando o nome do projeto. Não se baseia no cache.
+  Future<void> _productionAction({required String kind}) async {
+    if (tracking || !current || deployment.status != 'READY') {
+      feedback(context, 'Atualize o deploy e aguarde o status READY antes de continuar.');
+      return;
+    }
+    await run(() async {
+      final projectId = deployment.projectId;
+      if (projectId == null || projectId.isEmpty) {
+        throw const ApiFailure(FailureKind.invalid,
+          'ID do projeto indisponível no deploy. Atualize e tente novamente.');
+      }
+      final project = await app.repository.project(projectId);
+      if (!mounted) return;
+      final isPreview = kind == 'preview';
+      final isRollback = kind == 'rollback';
+      final title = isPreview ? 'Promover Preview para produção?'
+        : isRollback ? 'Restaurar produção anterior?' : 'Promover build de produção?';
+      final label = isPreview ? 'Criar deploy de produção'
+        : isRollback ? 'Confirmar rollback' : 'Promover produção';
+      final description = isPreview
+        ? 'Deploy selecionado: ${deployment.id}. Será criado um NOVO deploy em Production. '
+          'A Vercel criará um novo build e pode herdar variáveis do Preview. '
+          'Confira as configurações antes de prosseguir. O site público poderá mudar.'
+        : isRollback
+          ? 'Deploy de destino: ${deployment.id}. Os domínios de produção podem '
+            'voltar à versão anterior sem rebuild. O plano Hobby permite somente '
+            'o deploy de produção imediatamente anterior. Variáveis e configurações '
+            'do build antigo podem estar desatualizadas.'
+          : 'Deploy de produção selecionado: ${deployment.id}. A Vercel '
+            'tentará tornar esse build o atual, sem recompilar. '
+            'Use apenas em deploys prontos e verificados.';
+      final confirmed = await confirmAction(context, title: title,
+        resource: project.name, destructive: true, production: true,
+        confirmLabel: label, description: description);
+      if (!mounted || !confirmed) return;
+      // O repositório consulta o deploy novamente e valida READY, ambiente
+      // e projectId antes de executar o POST solicitado.
+      if (isPreview) {
+        final newId = await app.repository.promotePreview(project.id, deployment.id);
+        if (!mounted) return;
+        feedback(context, 'Novo deploy de produção solicitado. Aguarde READY.');
+        unawaited(app.sync(force: true));
+        Navigator.push(context, MaterialPageRoute<void>(builder: (_) =>
+          DeploymentScreen(app, Deployment(id: newId, name: project.name,
+            status: 'QUEUED', environment: 'production', projectId: project.id),
+            trackOnOpen: true)));
+      } else {
+        if (isRollback) {
+          await app.repository.rollbackProduction(project.id, deployment.id);
+        } else {
+          await app.repository.promoteProduction(project.id, deployment.id);
+        }
+        if (!mounted) return;
+        feedback(context, 'Solicitação aceita. Atualize e confira a produção na Vercel.');
+        await app.sync(force: true);
+      }
+    });
+  }
+
   Uri? get _siteUrl => deploymentHttpsUrl(deployment.url);
   Future<void> _openUrl() => run(() async {
     final uri = _siteUrl;
@@ -237,6 +298,29 @@ class _DeploymentScreenState extends State<DeploymentScreen>
       Padding(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: [
         FilledButton.tonalIcon(onPressed: working || tracking ? null : _redeploy, icon: const Icon(Icons.replay), label: const Text('Novo deploy')),
         if (deployment.running) OutlinedButton.icon(onPressed: working || tracking ? null : _cancel, icon: const Icon(Icons.stop_circle_outlined), label: const Text('Cancelar'))])),
+      if (current && deployment.status == 'READY' && deployment.projectId != null)
+        Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 12), child:
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const SectionLabel('Controle de produção'),
+            if (deployment.environment == 'preview')
+              FilledButton.icon(
+                onPressed: working || tracking ? null : () => _productionAction(kind: 'preview'),
+                icon: const Icon(Icons.publish_outlined),
+                label: const Text('Promover Preview para Production')),
+            if (deployment.environment == 'production') ...[
+              OutlinedButton.icon(
+                onPressed: working || tracking ? null : () => _productionAction(kind: 'rollback'),
+                icon: const Icon(Icons.settings_backup_restore),
+                label: const Text('Rollback para este deploy')),
+              OutlinedButton.icon(
+                onPressed: working || tracking ? null : () => _productionAction(kind: 'staged'),
+                icon: const Icon(Icons.rocket_launch_outlined),
+                label: const Text('Promover build Production')),
+            ],
+            const Text('Ações que podem alterar o site público. Requerem confirmação '
+              'com o nome do projeto. Verifique status e domínios após solicitar.',
+              style: TextStyle(fontSize: 12)),
+          ])),
       ExpansionTile(title: const Text('Eventos e erros de build'), children: [
         const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Logs da Vercel podem conter dados do seu projeto. São exibidos apenas nesta tela, sem cache ou backup.', style: TextStyle(fontSize: 12))),
         TextButton(onPressed: working ? null : _logs, child: const Text('Consultar até 200 eventos recentes')),

@@ -26,6 +26,8 @@ void main() {
     expect(find.byTooltip('Copiar token'), findsNothing);
     expect(find.byTooltip('Visualizar token'), findsOneWidget);
     final field = tester.widget<TextField>(find.byType(TextField)); expect(field.obscureText, true);
+    expect(field.autocorrect, isFalse);
+    expect(field.enableSuggestions, isFalse);
     await tester.pumpWidget(const SizedBox()); app.dispose();
   });
   testWidgets('colar substitui o conteúdo do token sem deixá-lo visível', (tester) async {
@@ -76,6 +78,37 @@ void main() {
     expect(adapter.requests.where((r) => r.method != 'GET'), isEmpty);
     await tester.pumpWidget(const SizedBox()); app.dispose();
   });
+  testWidgets('controle de produção não é oferecido em status não READY', (tester) async {
+    final adapter = FakeAdapter((_) async => response({'id': 'dpl_fixture',
+      'name': 'projeto-teste', 'projectId': 'prj_fixture', 'readyState': 'BUILDING', 'target': 'preview'}));
+    final app = await cachedApp(adapter);
+    await tester.pumpWidget(MaterialApp(home: DeploymentScreen(app, fixtureDeployment)));
+    await tester.pumpAndSettle();
+    expect(find.text('Promover Preview para Production'), findsNothing);
+    expect(find.text('Rollback para este deploy'), findsNothing);
+    await tester.pumpWidget(const SizedBox()); app.dispose();
+  });
+  testWidgets('Preview READY oferece ação com confirmação de projeto, cancelar não muda produção', (tester) async {
+    final adapter = FakeAdapter((options) async => response(
+      options.path.startsWith('/v9/projects/')
+        ? {'id': 'prj_fixture', 'name': 'projeto-teste'}
+        : {'id': 'dpl_fixture', 'name': 'projeto-teste', 'projectId': 'prj_fixture',
+            'readyState': 'READY', 'target': 'preview'}));
+    final app = await cachedApp(adapter);
+    await tester.pumpWidget(MaterialApp(home: DeploymentScreen(app, fixtureDeployment)));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Promover Preview para Production'), 200,
+      scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.text('Promover Preview para Production')); 
+    await tester.pumpAndSettle();
+    expect(find.text('Promover Preview para produção?'), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton,
+      'Criar deploy de produção')).onPressed, isNull);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
+    await tester.pumpWidget(const SizedBox()); app.dispose();
+  });
   testWidgets('confirmação de produção exibe Publicar, não Excluir', (tester) async {
     await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(
       body: TextButton(onPressed: () async {
@@ -121,13 +154,50 @@ void main() {
       }, child: const Text('Abrir formulário'))))));
     await tester.tap(find.text('Abrir formulário'));
     await tester.pumpAndSettle();
-    expect(tester.widgetList<TextField>(find.byType(TextField)).last.obscureText, true);
+    final inputs = tester.widgetList<TextField>(find.byType(TextField)).toList();
+    expect(inputs.first.autocorrect, isTrue);
+    expect(inputs.first.enableSuggestions, isTrue);
+    expect(inputs.last.obscureText, isTrue);
+    expect(inputs.last.autocorrect, isFalse);
+    expect(inputs.last.enableSuggestions, isFalse);
     await tester.enterText(find.byType(TextField).first, 'site');
     await tester.enterText(find.byType(TextField).last, 'temporario');
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     expect(result, {'name': 'site', 'token': 'temporario'});
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('formulários técnicos exibem sugestões sem trocar nomes', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) => Scaffold(
+      body: TextButton(onPressed: () => fieldsDialog(context, 'Configuração',
+        {'repo': 'Repositório', 'domain': 'Domínio', 'name': 'Nome do projeto'}),
+        child: const Text('Abrir'))))));
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    final inputs = tester.widgetList<TextField>(find.byType(TextField)).toList();
+    expect(inputs.length, 3);
+    expect(inputs[0].autocorrect, isFalse);
+    expect(inputs[1].autocorrect, isFalse);
+    expect(inputs[2].autocorrect, isTrue);
+    for (final field in inputs) {
+      expect(field.enableSuggestions, isTrue);
+    }
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('busca de projetos permite sugestões do teclado', (tester) async {
+    final app = await cachedApp(FakeAdapter((_) async => response({})));
+    await tester.pumpWidget(MeuVercelApp(app));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Projetos'));
+    await tester.pumpAndSettle();
+    final search = tester.widget<TextField>(find.byWidgetPredicate((widget) =>
+      widget is TextField && widget.decoration?.hintText == 'Buscar nos projetos carregados'));
+    expect(search.autocorrect, isTrue);
+    expect(search.enableSuggestions, isTrue);
+    await tester.pumpWidget(const SizedBox());
+    app.dispose();
   });
   testWidgets('deploy acompanhado alcança READY, oferece copiar e abrir', (tester) async {
     var reads = 0;

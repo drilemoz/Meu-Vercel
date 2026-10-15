@@ -1,8 +1,22 @@
+## 1.6.0 — versionCode 11 — 2026-10-14
+
+- Adicionadas ações na tela de detalhes de deploy: Preview READY -> novo deploy Production, promoção de build Production READY e rollback para Production anterior elegível.
+- Proteção contra ações em projetos errados: validação online do `projectId`, status `READY`, ambiente e confirmação digitada do nome atual do projeto, com mensagens específicas sobre as diferenças de rebuild e rollback.
+- Rollback bloqueia o deploy mais recente da listagem de Production, enquanto a elegibilidade final e a versão ativa são determinadas pela Vercel. Hobby restringe rollback ao anterior imediato.
+- Testes Flutter unitários e widgets acrescentados; compilação e testes autenticados permanecem pendentes de CI.
+- Identidade Android, assinatura, armazenamento local, login e workflow GitHub Releases de APK direto preservados.
+
+## Versão 1.5.3+10 (14/10/2026)
+- Corrigida a configuração do teclado: sugestões e autocorreção para nomes e buscas; sugestões sem substituição automática para identificadores técnicos.
+- Tokens e valores secretos continuam com `autocorrect: false` e `enableSuggestions: false`. Confirmações destrutivas continuam literais.
+- Testes de widgets ampliados para campos comuns, técnicos, secretos e busca; Flutter/Android devem ser validados no CI.
+- Identidade do app, assinatura persistente, deploys e publicação direta de `Meu Vercel-v1.5.3.apk` preservados.
+
 ## Versão 1.5.2+9 (14/10/2026)
 - Corrigido erro de ciclo de vida do Flutter identificado no workflow #8: `TextEditingController was used after being disposed` em diálogo de confirmação de produção. Agora o controller pertence ao `State` da própria janela e só é descartado quando a rota termina sua animação de saída.
 - Aplicado o mesmo cuidado ao formulário reutilizável para criar/editar recursos, inclusive limpeza dos campos sensíveis após fechamento; confirmações e rótulos permanecem inalterados.
 - Dois testes widget adicionados para confirmar publicação e formulário após a animação de saída; teste existente reforçado com verificação de exceções. O segundo erro `_dependents.isEmpty` pode ter sido efeito em cascata do primeiro, e exige reexecução Flutter no CI.
-- Preservados applicationId, assinatura, backups, API Vercel, seleção de pasta/ZIP, publicação Preview/Production e geração de somente `Meu Vercel-v1.5.2.apk` em GitHub Releases.
+- Preservados applicationId, assinatura, backups, API Vercel, seleção de pasta/ZIP, publicação Preview/Production e geração de somente `Meu Vercel-v1.5.3.apk` em GitHub Releases.
 - CI do workflow #8: `flutter analyze` aprovado; 54 de 56 testes aprovados; 2 testes widget com falha. Correção local ainda requer `flutter test` e build Android no GitHub Actions.
 
 ## Versão 1.5.1+8 (14/10/2026)
